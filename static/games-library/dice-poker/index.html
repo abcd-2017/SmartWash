@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#F5F6F3">
 <title>骰子扑克</title>
 <style>
-  /*token:GAME-THEME.md §2 基线（按需取用，值与基线一致）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light }
-  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
+  /*token:GAME-THEME.md §2 基线 + §3 素材 token（毡面/骰体/骰点/高亮金）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-dpk-felt:#1E6B4A;--g-dpk-die:#FBF7EC;--g-dpk-pip:#22303A;--g-dpk-gold:#D98A26;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-dpk-felt:#123A2C;--g-dpk-die:#E7E1D0;--g-dpk-pip:#1A2530;--g-dpk-gold:#E2A44E;color-scheme:dark }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
   html, body { margin: 0; padding: 0; }
@@ -22,47 +22,100 @@
     touch-action: manipulation; overscroll-behavior: none;
   }
   .wrap { width: 100%; max-width: 480px; }
+  .swi { display: inline-block; vertical-align: -0.14em; flex: none; width: 1em; height: 1em; }
   header { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 12px; padding: 0 2px; }
   .sub { font-size: 14px; color: var(--g-muted); line-height: 1.4; }
+  #lvTag { color: var(--g-text); font-weight: 600; white-space: nowrap; }
+  #lvRule { font-size: 12px; line-height: 1.3; text-align: right; }
   .stats { display: flex; gap: 8px; margin-bottom: 10px; }
   .stat { flex: 1; min-width: 0; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
-  .stat .val { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val { display: inline-block; font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
   .stat .val.plain { color: var(--g-text); }
+  .val.bump { animation: valPop .3s ease-out; }
+  @keyframes valPop { 0% { transform: scale(1); } 40% { transform: scale(1.16); } 100% { transform: scale(1); } }
   .btn {
-    min-height: 44px; padding: 0 12px; border: 0; border-radius: var(--g-radius-btn);
+    min-height: 44px; padding: 0 12px; flex: 1; border: 0; border-radius: var(--g-radius-btn);
     background: var(--g-surface2); color: var(--g-text);
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
     font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    transition: transform .12s ease-out, opacity .16s ease-out, background .16s ease-out;
   }
-  .btn:active { opacity: .85; }
+  .btn:active { transform: scale(.96); }
   .btn:disabled { opacity: .35; }
-  .board { background: var(--g-surface); border-radius: var(--g-radius); box-shadow: var(--g-shadow); padding: 10px 8px 12px; }
-  .dice { display: flex; gap: 8px; justify-content: center; margin: 8px 0; }
-  .die {
-    width: 52px; height: 52px; border-radius: 12px;
-    background: var(--g-surface); border: 1px solid var(--g-border); box-shadow: var(--g-shadow);
-    font-family: inherit; font-size: 22px; font-weight: 700; color: var(--g-text);
-    cursor: pointer; padding: 0;
+  .btn.primary { background: var(--g-btn-primary); color: #fff; }
+  .board { background: var(--g-surface); border-radius: var(--g-radius); box-shadow: var(--g-shadow); padding: 10px 10px 12px; }
+  /* 牌桌骰盘：品牌绿毡面 + 顶光 + 内凹阴影，轻立体（§3 素材 token） */
+  .tray {
+    border-radius: var(--g-radius-inner); padding: 12px 8px 10px; margin-bottom: 10px;
+    background: var(--g-dpk-felt);
+    background-image: radial-gradient(120% 120% at 50% 0%, rgba(255,255,255,.16), rgba(255,255,255,0));
+    box-shadow: inset 0 2px 10px rgba(0,0,0,.24), inset 0 0 0 1px var(--g-border);
   }
-  .die.held { background: var(--g-primary-soft); color: var(--g-primary-deep); box-shadow: inset 0 0 0 2px var(--g-primary); }
-  .rollrow { display: flex; gap: 8px; align-items: center; margin: 8px 2px 4px; }
+  .dice { display: flex; gap: 8px; justify-content: center; }
+  .die {
+    position: relative;
+    width: 52px; height: 52px; border-radius: 12px; border: 0; padding: 0; cursor: pointer;
+    background: var(--g-dpk-die);
+    background-image: linear-gradient(145deg, rgba(255,255,255,.8), rgba(0,0,0,.16));
+    color: var(--g-dpk-pip);
+    box-shadow: inset 0 2px 3px rgba(255,255,255,.75), inset 0 -3px 6px rgba(0,0,0,.14), 0 4px 10px rgba(10,40,28,.28);
+    display: flex; align-items: center; justify-content: center;
+    transition: transform .16s ease-out, box-shadow .16s ease-out;
+  }
+  .die:active { transform: scale(.96); }
+  .die.held {
+    transform: translateY(-6px);
+    box-shadow: inset 0 0 0 3px var(--g-dpk-gold), inset 0 2px 3px rgba(255,255,255,.75), 0 8px 16px rgba(0,0,0,.3);
+  }
+  .die.held:active { transform: translateY(-6px) scale(.96); }
+  .die .die-face { width: 32px; height: 32px; display: block; }
+  .heldtag {
+    position: absolute; top: -7px; right: -7px; width: 20px; height: 20px; border-radius: 10px;
+    background: var(--g-dpk-gold); color: var(--g-dpk-pip);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 6px rgba(0,0,0,.25);
+    animation: tagPop .18s ease-out;
+  }
+  .heldtag .swi { font-size: 12px; }
+  @keyframes tagPop { from { transform: scale(.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .die.in { animation: dieIn .32s cubic-bezier(.2,.7,.3,1) both; }
+  @keyframes dieIn { from { opacity: 0; transform: translateY(14px) scale(.7) rotate(-10deg); } to { opacity: 1; transform: none; } }
+  .die.rolling { animation: tumble .34s ease-out; }
+  @keyframes tumble { 0% { transform: translateY(-7px) rotate(-12deg); } 45% { transform: translateY(4px) rotate(10deg); } 100% { transform: none; } }
+  .rollrow { display: flex; gap: 8px; align-items: center; margin: 2px 2px 8px; }
   .rollhint { font-size: 12px; color: var(--g-muted); flex: 1; line-height: 1.5; }
-  .scorecard { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-top: 10px; }
+  .ctl {
+    min-height: 48px; flex: 1; border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-btn-primary); color: #fff;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    transition: transform .12s ease-out, opacity .16s ease-out;
+  }
+  .ctl:active { transform: scale(.96); }
+  .ctl:disabled { opacity: .4; }
+  .ctl .swi { font-size: 18px; }
+  .scorecard { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-top: 2px; }
   .scat {
-    min-height: 44px; border: 0; border-radius: var(--g-radius-inner);
+    min-height: 44px; border: 1px solid var(--g-border); border-radius: var(--g-radius-inner);
     background: var(--g-surface2); color: var(--g-text);
     font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
-    display: flex; align-items: center; justify-content: space-between; padding: 0 10px;
+    display: flex; align-items: center; gap: 6px; padding: 0 10px;
+    transition: background .16s ease-out, border-color .16s ease-out, box-shadow .16s ease-out, transform .12s ease-out, opacity .16s ease-out;
   }
-  .scat .pv { color: var(--g-primary-deep); font-variant-numeric: tabular-nums; }
-  .scat[data-used="1"] { opacity: .4; }
-  .scat[data-best="1"] { background: var(--g-primary-soft); color: var(--g-on-soft); }
-  .arena { text-align: center; margin: 6px 0 2px; min-height: 20px; font-size: 14px; color: var(--g-muted); }
-  .arena b { color: var(--g-primary-deep); }
+  .scat:active { transform: scale(.96); }
+  .scat .ci { flex: none; color: var(--g-primary-deep); font-size: 16px; }
+  .scat .ci.warn { color: var(--g-warning); }
+  .scat .ci.water { color: var(--g-water); }
+  .scat .ci.gold { color: var(--g-dpk-gold); }
+  .scat .ci.muted { color: var(--g-muted); }
+  .scat .pv { margin-left: auto; color: var(--g-primary-deep); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .scat[data-used="1"] .nm { color: var(--g-muted); }
+  .scat[data-used="1"] .pv { color: var(--g-muted); }
+  .scat[data-best="1"] { background: var(--g-primary-soft); border-color: var(--g-primary); box-shadow: inset 0 0 0 1px var(--g-primary); }
+  .scat[data-best="1"] .pv { color: var(--g-on-soft); }
   .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; font-weight: 500; color: var(--g-muted); text-align: center; }
   .msg.err { color: var(--g-danger); }
-  .msg.win { color: var(--g-success); }
-  .foot { margin: 14px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
   .overlay {
     position: fixed; inset: 0; z-index: 10;
     background: var(--g-scrim);
@@ -77,7 +130,7 @@
     animation: pop .25s ease-out;
   }
   @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
-  .panel h2 { margin: 0 0 6px; font-size: 18px; }
+  .panel h2 { margin: 0 0 6px; font-size: 18px; display: flex; align-items: center; justify-content: center; gap: 6px; }
   .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.7; }
   .panel .desc b { color: var(--g-primary-deep); }
   .panel .btn { width: 100%; margin-bottom: 8px; }
@@ -87,18 +140,37 @@
     min-height: 44px; border: 0; border-radius: var(--g-radius-inner);
     background: var(--g-surface2); color: var(--g-text);
     font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer;
+    transition: transform .12s ease-out, background .16s ease-out;
   }
+  .lvbtn:active { transform: scale(.96); }
   .lvbtn[disabled] { opacity: .35; }
   .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
   .tools { display: flex; gap: 8px; margin-bottom: 10px; }
-  .ctl { min-height: 48px; flex: 1; border: 0; border-radius: var(--g-radius-btn); background: var(--g-btn-primary); color: #fff; font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer; }
-  .ctl:active { opacity: .8; }
-  .ctl:disabled { opacity: .4; }
-  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（§6.1 模板） */
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
-  /* P2: 键盘焦点可见（S5） */
+  /* S2: 动效降级——保留状态切换，压平装饰动效（§6.1 模板） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; animation-delay:.01ms !important; transition-duration:.01ms !important} }
+  /* P2: 焦点可见（S5） */
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 </style>
+<script>
+window.SW_ICON=function(n,s){s=s||"";var P={
+'dice':'<rect x="3.5" y="3.5" width="17" height="17" rx="4.5"/><g fill="currentColor" stroke="none"><circle cx="8.4" cy="8.4" r="1.8"/><circle cx="15.6" cy="8.4" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="8.4" cy="15.6" r="1.8"/><circle cx="15.6" cy="15.6" r="1.8"/></g>',
+'lock':'<rect x="5" y="10.5" width="14" height="9.5" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>',
+'reset':'<path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/>',
+'grid':'<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>',
+'arrow-right':'<path d="M5 12h14M13 6l6 6-6 6"/>',
+'rotate':'<path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/>',
+'x':'<path d="M6 6l12 12M18 6L6 18"/>',
+'check':'<path d="M4 12.5l5 5L20 6.5"/>',
+'star':'<path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/>',
+'kind3':'<g fill="currentColor" stroke="none"><circle cx="6" cy="12" r="2.4"/><circle cx="12" cy="12" r="2.4"/><circle cx="18" cy="12" r="2.4"/></g>',
+'kind4':'<g fill="currentColor" stroke="none"><circle cx="6" cy="12" r="2.4"/><circle cx="10.2" cy="12" r="2.4"/><circle cx="14.4" cy="12" r="2.4"/><circle cx="18.6" cy="12" r="2.4"/></g>',
+'house':'<path d="M4 11l8-6.5L20 11M6.5 9.5V19h11V9.5"/>',
+'run4':'<g fill="currentColor" stroke="none"><circle cx="6" cy="16.5" r="2.2"/><circle cx="10" cy="12.5" r="2.2"/><circle cx="14" cy="8.5" r="2.2"/><circle cx="18" cy="4.5" r="2.2"/></g>',
+'run5':'<g fill="currentColor" stroke="none"><circle cx="5" cy="17.5" r="2"/><circle cx="8.6" cy="13.5" r="2"/><circle cx="12" cy="9.5" r="2"/><circle cx="15.4" cy="5.5" r="2"/><circle cx="18.6" cy="2.6" r="2"/></g>',
+'help':'<path d="M9.2 9.2a3.1 3.1 0 1 1 4.3 2.9c-1 .4-1.4 1-1.4 2.1v.2M12 18.4v.4"/>'};
+var fill={'star':1};
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';};
+</script>
 <script>
 //主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
 (function(){
@@ -115,28 +187,27 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
 </head>
 <body>
 <div class="wrap">
-  <header><span class="sub" id="lvTag">第 1 关</span><span class="sub" id="lvRule">每轮最多 3 掷 · 点骰子锁住不重掷 · 记分卡选档计分</span></header>
+  <header><span class="sub" id="lvTag">第 1 关 · 3 轮 · 目标 41</span><span class="sub" id="lvRule">每轮最多 3 掷，锁骰后选档计分</span></header>
   <div class="stats">
     <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/40</span></div>
     <div class="stat"><span class="label">总分</span><span class="val" id="stTotal">0</span></div>
     <div class="stat"><span class="label">目标</span><span class="val plain" id="stTarget">-</span></div>
-    <div class="stat"><span class="label">计分校验</span><span class="val plain" id="stVer">-</span></div>
   </div>
   <div class="board">
-    <div class="dice" id="dice"></div>
+    <div class="tray">
+      <div class="dice" id="dice"></div>
+    </div>
     <div class="rollrow">
       <button class="ctl" id="btnRoll">掷骰</button>
       <div class="rollhint" id="rollHint">剩余掷 3 次 · 点骰子锁住要保留的点数</div>
     </div>
-    <div class="arena" id="arena"></div>
     <div class="scorecard" id="scorecard"></div>
   </div>
-  <p class="msg" id="msg" role="status" aria-live="polite">掷骰后从记分卡选一档计分；全部轮数结束总分 ≥ 目标即过关</p>
+  <p class="msg" id="msg" role="status" aria-live="polite">点「掷骰」开始本关</p>
   <div class="tools">
     <button class="btn" id="btnReset">重开</button>
     <button class="btn" id="btnLv">选关</button>
   </div>
-  <p class="foot">键盘：1-5 锁骰 · R 掷骰 · Tab+回车 选档 · 关卡越大牌型档越多、轮数越多 · 进度自动保存</p>
 </div>
 <div class="overlay" role="dialog" aria-modal="true" id="overlay">
   <div class="panel">
@@ -181,6 +252,10 @@ var GB=(function(){
 /* ---------- 关卡数据（配置型：tier 牌型档、rounds 轮数、target 目标；DB 下发优先 + 版本缓存 + 包内默认兜底） ---------- */
 var GAME_KEY="dice-poker",SAVE_KEY="sw.dicepoker.v1";
 var CAT_NAMES=["一点","二点","三点","四点","五点","六点","三条","四条","葫芦","小顺","大顺","快艇","机会"];
+/* 各档图标：一点..六点直接用骰面（数字=点数），组合档用 SW_ICON 专属图形 */
+var CAT_ICONS=[1,2,3,4,5,6,"kind3","kind4","house","run4","run5","star","help"];
+/* 档型配色分层：点数档 deep / 三条四条葫芦 warning / 小顺大顺 water / 快艇 gold / 机会 muted */
+var CAT_TONE=["deep","deep","deep","deep","deep","deep","warn","warn","warn","water","water","gold","muted"];
 var DEFAULT_LEVELS=[];
 (function(){
   for(var i=0;i<40;i++){
@@ -276,9 +351,7 @@ function buildActive(){
     save.lv=Math.min(save.lv,lv);persist();
     loadLevel(lv);
   }
-  refreshVerHud();
 }
-function refreshVerHud(){$("stVer").textContent=ACTIVE.length+"/"+LEVELS.length;}
 function parseDbLevels(res){
   if(!res||!Array.isArray(res.levels)||!res.levels.length)return null;
   var list=[],seenName={};
@@ -346,7 +419,7 @@ function syncSaveFromServer(){
 
 /* ---------- 牌桌状态 ---------- */
 var lv=0,L=null,dice=[1,2,3,4,5],held=[false,false,false,false,false],rollsLeft=3;
-var used=[],total=0,roundsLeft=0,phase="roll",roundNum=0;
+var used=[],total=0,roundsLeft=0,phase="roll",roundNum=0,pendingLv=0;
 function $(id){return document.getElementById(id)}
 function say(t,cls){var m=$("msg");m.textContent=t;m.className="msg"+(cls?" "+cls:"")}
 /* 游戏内计分引擎 */
@@ -364,13 +437,18 @@ function gameScore(d,cat){
   if(cat===11){var f3;for(f3=1;f3<=6;f3++)if(cnt[f3]===5)return 50;return 0;}
   return sum;
 }
+/* ---------- 动效辅助（装饰层，prefers-reduced-motion 时整体空转） ---------- */
+function bumpTotal(){
+  if(window.__gRM)return;
+  var v=$("stTotal");v.classList.remove("bump");void v.offsetWidth;v.classList.add("bump");
+}
 function rollDice(){
   if(phase!=="roll"||rollsLeft<=0)return;
   var i;
   for(i=0;i<5;i++)if(!held[i])dice[i]=1+Math.floor(Math.random()*6);
   rollsLeft--;
   say(rollsLeft>0?"还剩 "+rollsLeft+" 次掷骰，锁好想要的点数":"三次用完，从记分卡选一档计分");
-  updStats();renderDice();renderCard();
+  updStats();renderDice("roll");renderCard();
 }
 function assign(cat){
   if(phase!=="assign"&&!(phase==="roll"&&rollsLeft===0&&used[cat]===undefined)){
@@ -390,22 +468,26 @@ function assign(cat){
   if(roundsLeft<=0){endLevel();return;}
   renderDice();renderCard();
   rollDice();
+  bumpTotal();
 }
 function endLevel(){
-  var won=total>=L.target;
+  var won=total>=L.target,last=lv>=ACTIVE.length-1;
   if(won){
-    if(lv<ACTIVE.length-1){save.lv=Math.max(save.lv,lv+1);persist();}
+    pendingLv=last?0:Math.min(lv+1,ACTIVE.length-1);
+    save.lv=last?0:Math.max(save.lv,pendingLv);persist();
     if(GB.available)GB.reportScore(GAME_KEY,{metricValue:lv+1,metricExtra:total}).catch(function(){});
-    $("ovTitle").textContent=(lv>=ACTIVE.length-1)?"全部通关！":"过关！";
-    $("ovDesc").innerHTML="总分 <b>"+total+"</b> ≥ 目标 "+L.target+"！"+(lv<ACTIVE.length-1?"<br>已解锁第 "+(lv+2)+" 关":"<br>40 关全部完成");
-    $("ovBtn").textContent=(lv>=ACTIVE.length-1)?"回到第 1 关":"下一关";
+    $("ovTitle").innerHTML=SW_ICON("star")+" "+(last?"全部通关！":"过关！");
+    $("ovDesc").innerHTML="总分 <b>"+total+"</b> ≥ 目标 "+L.target+"！"+(last?"<br>"+ACTIVE.length+" 关全部完成":"<br>已解锁第 "+(pendingLv+1)+" 关");
+    setOvBtn(last?"回到第 1 关":"下一关","arrow-right");
   }else{
-    $("ovTitle").textContent="未达目标";
+    pendingLv=lv;
+    $("ovTitle").innerHTML=SW_ICON("x")+" 未达目标";
     $("ovDesc").innerHTML="总分 <b>"+total+"</b>，目标 "+L.target+"。点「再战」重掷一局。";
-    $("ovBtn").textContent="再战本关";
+    setOvBtn("再战本关","rotate");
   }
   $("overlay").classList.add("show");
 }
+function setOvBtn(txt,icon){var b=$("ovBtn");b.innerHTML=SW_ICON(icon)+txt;}
 function updStats(){
   $("stTotal").textContent=total;
   $("stTarget").textContent=L.target;
@@ -413,11 +495,27 @@ function updStats(){
   $("btnRoll").disabled=phase!=="roll"||rollsLeft<=0;
 }
 /* ---------- 渲染 ---------- */
-var DICE_DOTS=["","⚀","⚁","⚂","⚃","⚄","⚅"];
-function renderDice(){
+/* 内联 SVG 骰点：24 viewBox 标准 1-6 点位，fill=currentColor 随令牌变色（统一视觉语言 #4） */
+var DIE_PIPS={1:[[12,12]],2:[[6,6],[18,18]],3:[[6,6],[12,12],[18,18]],4:[[6,6],[18,6],[6,18],[18,18]],5:[[6,6],[18,6],[12,12],[6,18],[18,18]],6:[[6,6],[18,6],[6,12],[18,12],[6,18],[18,18]]};
+function pipSvg(v,cls){
+  var pts=DIE_PIPS[v]||DIE_PIPS[1],s="",i;
+  for(i=0;i<pts.length;i++)s+='<circle cx="'+pts[i][0]+'" cy="'+pts[i][1]+'" r="2.7"/>';
+  return '<svg class="'+cls+'" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true">'+s+'</svg>';
+}
+function dieSvg(v){return pipSvg(v,"die-face")}
+/* mode：enter=入场错落 / roll=滚动（仅未锁定骰） / 空=静置 */
+function renderDice(mode){
   var h="",i;
   for(i=0;i<5;i++){
-    h+='<button class="die'+(held[i]?" held":"")+'" data-die="'+i+'" aria-label="骰子 '+(i+1)+'：'+dice[i]+(held[i]?'（已锁）':'')+'">'+dice[i]+'</button>';
+    var cls="die";
+    if(held[i])cls+=" held";
+    if(mode==="enter")cls+=" in";
+    else if(mode==="roll"&&!held[i])cls+=" rolling";
+    var st="";
+    if(mode==="enter")st=' style="animation-delay:'+(i*40)+'ms"';
+    else if(mode==="roll"&&!held[i])st=' style="animation-delay:'+(i*35)+'ms"';
+    h+='<button class="'+cls+'"'+st+' data-die="'+i+'" aria-label="骰子 '+(i+1)+'：'+dice[i]+(held[i]?'（已锁）':'')+'">'
+      +dieSvg(dice[i])+(held[i]?'<span class="heldtag">'+SW_ICON("lock")+'</span>':'')+'</button>';
   }
   $("dice").innerHTML=h;
 }
@@ -427,9 +525,11 @@ function renderCard(){
   for(k=0;k<L.cats;k++){
     var u=used[k];
     var pv=u!==undefined?u:gameScore(dice,k);
+    var tone=u!==undefined?"muted":CAT_TONE[k];
+    var icon=u!==undefined?SW_ICON("check"):(typeof CAT_ICONS[k]==="number"?pipSvg(CAT_ICONS[k],"swi"):SW_ICON(CAT_ICONS[k]));
     h+='<button class="scat" data-cat="'+k+'" data-used="'+(u!==undefined?"1":"0")+'"'+(u!==undefined?" disabled":"")+(k===bestCat&&u===undefined&&rollsLeft===0?' data-best="1"':"")
       +' aria-label="'+CAT_NAMES[k]+(u!==undefined?' 已计 '+u+' 分':' 可计 '+pv+' 分')+'">'
-      +'<span>'+CAT_NAMES[k]+'</span><span class="pv">'+pv+'</span></button>';
+      +'<span class="ci'+(tone==="deep"?"":" "+tone)+'">'+icon+'</span><span class="nm">'+CAT_NAMES[k]+'</span><span class="pv">'+pv+'</span></button>';
   }
   $("scorecard").innerHTML=h;
 }
@@ -440,14 +540,16 @@ function loadLevel(n){
   dice=[1,2,3,4,5];held=[false,false,false,false,false];rollsLeft=3;
   used=[];total=0;roundsLeft=L.rounds;roundNum=0;phase="roll";
   save.lv=Math.max(save.lv,lv);persist();
-  $("lvTag").textContent="第 "+(lv+1)+" 关 · "+L.name+"（"+L.rounds+" 轮 · "+L.cats+" 档 · 目标 "+L.target+"）";
-  say("掷骰后从记分卡选一档计分；总分 ≥ "+L.target+" 过关");
-  updStats();renderDice();renderCard();
+  $("lvTag").textContent="第 "+(lv+1)+" 关 · "+L.rounds+" 轮 · 目标 "+L.target;
+  $("stLv").textContent=(lv+1)+"/"+ACTIVE.length;
+  say("第 "+(lv+1)+" 关开始");
+  updStats();renderDice("enter");renderCard();
 }
 /* ---------- 输入 ---------- */
 $("dice").addEventListener("click",function(e){
   var b=e.target.closest("[data-die]");
-  if(!b||phase!=="roll"||rollsLeft<=0||rollsLeft===3)return;
+  if(!b||phase!=="roll"||rollsLeft<=0)return;
+  if(rollsLeft===3){say("先掷骰，再点骰子锁住","err");return;}
   var i=parseInt(b.getAttribute("data-die"),10);
   held[i]=!held[i];
   renderDice();
@@ -465,7 +567,7 @@ $("btnLv").addEventListener("click",function(){
   overlayMode="lv";renderLvGrid();
   $("ovTitle").textContent="选择关卡";
   $("ovDesc").textContent="绿色为已通关";
-  $("ovBtn").textContent="取消";
+  setOvBtn("取消","x");
   $("overlay").classList.add("show");
 });
 var overlayMode="";
@@ -489,7 +591,7 @@ function renderLvGrid(){
 $("ovBtn").addEventListener("click",function(){
   $("overlay").classList.remove("show");
   if(overlayMode==="lv"){overlayMode="";return;}
-  loadLevel(lv);
+  loadLevel(pendingLv);
 });
 window.addEventListener("keydown",function(e){
   var k=e.key;
@@ -502,6 +604,10 @@ window.addEventListener("keydown",function(e){
   else if(k==="r"||k==="R"){if(phase==="roll"&&rollsLeft>0)rollDice();}
 });
 /* ---------- 启动 ---------- */
+/* 工具按钮与主 CTA 图标：文字前内联 SVG（SW_ICON 范式，1em 与文字基线对齐） */
+$("btnRoll").innerHTML=SW_ICON("dice")+"掷骰";
+$("btnReset").insertAdjacentHTML("afterbegin",SW_ICON("reset"));
+$("btnLv").insertAdjacentHTML("afterbegin",SW_ICON("grid"));
 buildActive();
 syncLevelsFromServer();
 syncSaveFromServer();

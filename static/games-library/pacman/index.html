@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#F5F6F3">
 <title>吃豆人</title>
 <style>
-  /*token:GAME-THEME.md §2（迷宫底/走廊描边为铺面素材走 token；角色色为玩法素材保留字面）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light }
-  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
+  /*token:GAME-THEME.md §2 基线 + §3 素材 token（走廊地面 / 墙体 / 墙顶亮面 / 吃豆人黄）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-on-primary:#FFFFFF;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-hairline:#EFF1EE;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-pac-floor:#FFFFFF;--g-pac-wall:#3E4C45;--g-pac-wall-hi:#5A6A62;--g-pac-body:#FFD44A;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-hairline:#262A27;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-pac-floor:#1D201E;--g-pac-wall:#6A7A72;--g-pac-wall-hi:#8A9A92;color-scheme:dark }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
   html, body { margin: 0; padding: 0; }
@@ -25,42 +25,51 @@
   header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 16px; padding: 0 2px; }
   .sub { font-size: 14px; color: var(--g-muted); }
   .stats { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; animation: rise .38s ease-out both; }
+  .stat:nth-child(2) { animation-delay: 40ms; }   /* 入场错落 40ms */
+  .stat:nth-child(3) { animation-delay: 80ms; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
-  .stat .val { font-size:18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
-  .stage { position: relative; }
-  canvas { display: block; width: 100%; touch-action: none; border-radius: var(--g-radius-inner); }
+  .stat .val { display: inline-block; font-size:18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stage { position: relative; animation: fadein .3s ease-out both; }
+  canvas { display: block; width: 100%; touch-action: none; border-radius: var(--g-radius-inner); box-shadow: var(--g-shadow); }
   .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
   .tools { display: flex; gap: 8px; }
   .btn {
     min-height: 44px; padding: 0 14px; flex: 1;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
     border: 0; border-radius: var(--g-radius-btn);
-    background: var(--g-btn-primary); color: #fff;
+    background: var(--g-btn-primary); color: var(--g-on-primary);
     font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    transition: transform .14s ease-out, opacity .16s ease-out, background .16s ease-out;
   }
-  .btn:active { opacity: .85; }
+  .btn:active { transform: scale(.96); }
   .btn.ghost { background: var(--g-surface2); color: var(--g-text); }
+  .swi { display: inline-block; vertical-align: -0.14em; flex: none; }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes valpop { 0% { transform: scale(1); } 40% { transform: scale(1.14); } 100% { transform: scale(1); } }
+  .stat .val.pop { animation: valpop .24s ease-out; }
   .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
   .overlay {
     position: fixed; inset: 0; z-index: 10;
     background: var(--g-scrim);
     display: none; align-items: center; justify-content: center; padding: 20px;
   }
-  .overlay.show { display: flex; }
+  .overlay.show { display: flex; animation: fadein .2s ease-out; }
   .panel {
     width: 100%; max-width: 320px; padding: 22px 18px;
     background: var(--g-surface); border-radius: var(--g-radius);
     box-shadow: var(--g-shadow); text-align: center;
     animation: pop .25s ease-out;
   }
-  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  @keyframes pop { 0% { transform: scale(.92); opacity: 0; } 60% { transform: scale(1.03); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
   .panel h2 { margin: 0 0 6px; font-size: 18px; }
   .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
   .panel .desc b { color: var(--g-primary-deep); font-size: 22px; }
   .panel .btn { width: 100%; }
 
   /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; animation-delay:0ms !important; transition-duration:.01ms !important} }
 
   /* P2: 键盘焦点可见（S5） */
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
@@ -77,9 +86,10 @@ window.SW_ICON=function(n,s){s=s||"";var P={
  'circle':'<circle cx="12" cy="12" r="5.5"/>','circle-f':'<circle cx="12" cy="12" r="5.5"/>',
  'tri-up':'<path d="M12 5l8 15H4z"/>','tri-down':'<path d="M12 19l-8-15h16z"/>','tri-left':'<path d="M5 12l15-8v16z"/>','tri-right':'<path d="M19 12L4 4v16z"/>',
  'backspace':'<path d="M9 5h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-6-7z M12.5 9.5l5 5M17.5 9.5l-5 5"/>',
- 'swap-h':'<path d="M7 4L3 8l4 4M3 8h14M17 12l4 4-4 4M21 16H7"/>'
+ 'swap-h':'<path d="M7 4L3 8l4 4M3 8h14M17 12l4 4-4 4M21 16H7"/>',
+ 'pause':'<path d="M8 5v14M16 5v14"/>','play':'<path d="M8 5v14l11-7z"/>'
 };
-var fill={ 'star':1,'circle-f':1,'tri-up':1,'tri-down':1,'tri-left':1,'tri-right':1 };
+var fill={ 'star':1,'circle-f':1,'tri-up':1,'tri-down':1,'tri-left':1,'tri-right':1,'play':1 };
 return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
 };
 </script>
@@ -119,7 +129,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
 <script>
 (function(){
 "use strict";
-/* ---------- 调色板：UI 走 token，角色为玩法素材保留字面 ---------- */
+/* ---------- 调色板：UI/铺面走 token，幽灵四色为玩法素材保留字面（D2） ---------- */
 var PAL={};
 function palLoad(){
   var s=getComputedStyle(document.documentElement);
@@ -127,9 +137,25 @@ function palLoad(){
   PAL={bg:v("--g-bg"),surface:v("--g-surface"),surface2:v("--g-surface2"),border:v("--g-border"),
     text:v("--g-text"),muted:v("--g-muted"),faint:v("--g-faint"),
     primary:v("--g-primary"),deep:v("--g-primary-deep"),soft:v("--g-primary-soft"),
-    danger:v("--g-danger"),warning:v("--g-warning")};
+    danger:v("--g-danger"),warning:v("--g-warning"),
+    floor:v("--g-pac-floor"),wall:v("--g-pac-wall"),wallHi:v("--g-pac-wall-hi"),body:v("--g-pac-body")};
 }
 window.__gOnTheme=function(){palLoad()};//App 推送主题时刷新调色板，rAF 循环自动重绘
+/* ---------- 颜色工具：仅由 PAL 色值混合出明暗，JS 内零颜色字面量 ---------- */
+var BLACK="rgb(0,0,0)",WHITE="rgb(255,255,255)";   // 恒暗 / 恒白（阴影与高光）
+function colParse(c){
+  c=String(c).trim();
+  if(c.charAt(0)==="#")c=c.slice(1);
+  if(c.length===3)c=c.charAt(0)+c.charAt(0)+c.charAt(1)+c.charAt(1)+c.charAt(2)+c.charAt(2);
+  if(c.length===6)return[parseInt(c.slice(0,2),16),parseInt(c.slice(2,4),16),parseInt(c.slice(4,6),16)];
+  var m=c.match(/(\d+)[,\s]+(\d+)[,\s]+(\d+)/);
+  return m?[+m[1],+m[2],+m[3]]:[0,0,0];
+}
+function colMix(a,b,t){
+  var A=colParse(a),B=colParse(b);
+  return "rgb("+Math.round(A[0]+(B[0]-A[0])*t)+","+Math.round(A[1]+(B[1]-A[1])*t)+","+Math.round(A[2]+(B[2]-A[2])*t)+")";
+}
+function colShade(c,t){return colMix(c,t<0?BLACK:WHITE,t<0?-t:t)}
 /* ---------- 迷宫：#墙 .豆 o能量豆 G幽灵屋(pac禁入) P出生点 ---------- */
 var MAZE=[
   "#############",
@@ -211,6 +237,20 @@ var GHOSTS=[
 var fx=[];//飘字
 function $(id){return document.getElementById(id)}
 function say(t){$("msg").textContent=t}
+/* 入场：迷宫 / 豆子按行错落 30ms，行内 140ms 完成，15 行总时长 ≤600ms（reduced-motion 跳过） */
+var enterTs=0;
+function markEnter(){enterTs=performance.now()}
+function enterP(row){
+  if(window.__gRM)return 1;
+  var p=(performance.now()-enterTs-row*30)/140;
+  return p<=0?0:p>=1?1:1-Math.pow(1-p,3);
+}
+/* 按钮：图标 + 文本分离，改文案时重插图标，不整按钮 textContent= */
+function setBtn(btn,text,icon){
+  if(!btn)return;
+  btn.innerHTML=(icon?window.SW_ICON(icon):"")+text;
+}
+function bump(el){if(!el)return;el.classList.remove("pop");void el.offsetWidth;el.classList.add("pop")}
 /* ---------- 几何 ---------- */
 function resize(){
   var w=cv.parentElement.clientWidth||360,dpr=Math.min(window.devicePixelRatio||1,2);
@@ -331,19 +371,19 @@ function clamp(v){return Math.max(0,Math.min(COLS-1,v))}
 function clampY(v){return Math.max(0,Math.min(ROWS-1,v))}
 /* ---------- 流程 ---------- */
 function addScore(n){
-  score+=n;$("stScore").textContent=score;
-  if(score>best){best=score;saveBest(best);$("stBest").textContent=best}
+  score+=n;$("stScore").textContent=score;bump($("stScore"));
+  if(score>best){best=score;saveBest(best);$("stBest").textContent=best;bump($("stBest"))}
   fx.push({t:"+"+n,x:pac.x,y:pac.y-10,ts:performance.now(),c:PAL.text});
 }
 function newGame(){
   score=0;lives=3;level=1;over=false;fx=[];
   $("stScore").textContent="0";$("stLives").textContent="×3";
-  resetBeans();spawnAll();
+  resetBeans();spawnAll();markEnter();
   state="ready";readyT=0;modeT=0;modeIdx=0;
   hideOverlay();say("第 1 关 · 能量豆可短暂反击幽灵");
 }
 function nextLevel(){
-  level++;resetBeans();spawnAll();
+  level++;resetBeans();spawnAll();markEnter();
   state="ready";readyT=0;modeT=0;modeIdx=0;
   say("第 "+level+" 关 · 幽灵提速了");
 }
@@ -361,7 +401,7 @@ function gameOver(){
   if(GB.available)GB.reportScore("pacman",{metricValue:best,metricExtra:level}).catch(function(){});
   $("ovTitle").textContent="游戏结束";
   $("ovDesc").innerHTML="本局得分 <b>"+score+"</b><br>"+(score>=best&&score>0?"新纪录！最高分 "+best:"历史最高分 "+best);
-  $("ovBtn").textContent="再来一局";
+  setBtn($("ovBtn"),"再来一局","rotate");
   showOverlay();
 }
 function showOverlay(){$("overlay").classList.add("show")}
@@ -369,13 +409,13 @@ function hideOverlay(){$("overlay").classList.remove("show")}
 function togglePause(){
   if(over)return;
   if(state==="play"){
-    state="paused";$("btnPause").textContent="继续";
+    state="paused";setBtn($("btnPause"),"继续","play");
     $("ovTitle").textContent="已暂停";
     $("ovDesc").innerHTML="喘口气，幽灵在原地等你";
-    $("ovBtn").textContent="继续游戏";
+    setBtn($("ovBtn"),"继续游戏","play");
     showOverlay();
   }else if(state==="paused"){
-    state="play";$("btnPause").textContent="暂停";hideOverlay();
+    state="play";setBtn($("btnPause"),"暂停","pause");hideOverlay();
   }
 }
 /* ---------- 主循环 ---------- */
@@ -424,14 +464,20 @@ function update(dt,ts){
   fx=fx.filter(function(f){return ts-f.ts<900});
 }
 function addScore2(n,x,y){
-  score+=n;$("stScore").textContent=score;
-  if(score>best){best=score;saveBest(best);$("stBest").textContent=best}
+  score+=n;$("stScore").textContent=score;bump($("stScore"));
+  if(score>best){best=score;saveBest(best);$("stBest").textContent=best;bump($("stBest"))}
   fx.push({t:"+"+n,x:x,y:y-10,ts:performance.now(),c:PAL.deep});
 }
 /* ---------- 绘制 ---------- */
+function rr(x,y,w,h,r){
+  r=Math.max(0,Math.min(r,w/2,h/2));
+  ctx.beginPath();ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();
+}
 function draw(ts){
   ctx.fillStyle=PAL.bg;ctx.fillRect(0,0,L.W,L.H);
-  drawMaze();
+  drawMaze(ts);
   drawBeans(ts);
   for(var i=0;i<4;i++)drawGhost(GHOSTS[i],ts);
   if(state!=="dying")drawPac(ts);
@@ -440,58 +486,105 @@ function draw(ts){
   if(state==="ready"){text("准备！",L.W/2,L.H/2+L.cell*1.5,18,PAL.text)}
   if(state==="levelup"){text("第 "+level+" 关完成！",L.W/2,L.H/2+L.cell*1.5,18,PAL.deep)}
 }
-function drawMaze(){
-  for(var y=0;y<ROWS;y++)for(var x=0;x<COLS;x++){
-    var t=tileAt(x,y),px=2+x*L.cell,py=2+y*L.cell;
-    if(t===T_WALL||t===T_HOME){
-      ctx.fillStyle=t===T_HOME?PAL.soft:PAL.surface2;
-      ctx.fillRect(px,py,L.cell,L.cell);
+/* 迷宫：地面「面」+ 隔格明度；墙体渐变「面」+ 顶光 + 落地投影；幽灵屋软面；外框边线 */
+function drawMaze(ts){
+  var gap=Math.max(1,L.cell*0.06),rad=Math.min(10,L.cell*0.2);
+  var x,y,t,px,py,p,w,g;
+  ctx.fillStyle=PAL.floor;ctx.fillRect(0,0,L.W,L.H);
+  ctx.fillStyle=PAL.surface2;ctx.globalAlpha=0.45;
+  for(y=0;y<ROWS;y++)for(x=0;x<COLS;x++){
+    t=tileAt(x,y);
+    if(t===T_WALL||t===T_HOME)continue;
+    if((x+y)%2===0)ctx.fillRect(2+x*L.cell,2+y*L.cell,L.cell,L.cell);
+  }
+  ctx.globalAlpha=1;
+  for(y=0;y<ROWS;y++)for(x=0;x<COLS;x++){
+    t=tileAt(x,y);
+    if(t!==T_WALL&&t!==T_HOME)continue;
+    p=enterP(y);if(p<=0)continue;
+    px=2+x*L.cell;py=2+y*L.cell;w=L.cell-2*gap;
+    ctx.save();ctx.globalAlpha=p;ctx.translate(0,(1-p)*L.cell*0.16);
+    if(t===T_HOME){
+      ctx.fillStyle=PAL.soft;rr(px+gap,py+gap,w,w,rad);ctx.fill();
+      ctx.lineWidth=Math.max(1,L.cell*0.035);ctx.strokeStyle=colMix(PAL.soft,BLACK,0.14);
+      rr(px+gap+0.5,py+gap+0.5,w-1,w-1,rad);ctx.stroke();
+    }else{
+      ctx.shadowColor="rgba(0,0,0,0.28)";ctx.shadowBlur=L.cell*0.10;ctx.shadowOffsetY=L.cell*0.04;
+      g=ctx.createLinearGradient(0,py+gap,0,py+gap+w);
+      g.addColorStop(0,PAL.wallHi);g.addColorStop(0.45,PAL.wall);g.addColorStop(1,colShade(PAL.wall,-0.28));
+      ctx.fillStyle=g;rr(px+gap,py+gap,w,w,rad);ctx.fill();
+      ctx.restore();
+      ctx.lineWidth=Math.max(1,L.cell*0.03);ctx.strokeStyle=colMix(PAL.wallHi,WHITE,0.22);
+      rr(px+gap+0.5,py+gap+0.5,w-1,w-1,rad);ctx.stroke();
+      continue;
     }
+    ctx.restore();
   }
-  //走廊描边：墙块朝非墙一侧画主色线
-  ctx.strokeStyle=PAL.primary;ctx.lineWidth=1.5;ctx.beginPath();
-  for(var y2=0;y2<ROWS;y2++)for(var x2=0;x2<COLS;x2++){
-    if(tileAt(x2,y2)!==T_WALL)continue;
-    var px2=2+x2*L.cell,py2=2+y2*L.cell;
-    if(y2>0&&tileAt(x2,y2-1)!==T_WALL){ctx.moveTo(px2,py2);ctx.lineTo(px2+L.cell,py2)}
-    if(y2<ROWS-1&&tileAt(x2,y2+1)!==T_WALL){ctx.moveTo(px2,py2+L.cell);ctx.lineTo(px2+L.cell,py2+L.cell)}
-    if(x2>0&&tileAt(x2-1,y2)!==T_WALL){ctx.moveTo(px2,py2);ctx.lineTo(px2,py2+L.cell)}
-    if(x2<COLS-1&&tileAt(x2+1,y2)!==T_WALL){ctx.moveTo(px2+L.cell,py2);ctx.lineTo(px2+L.cell,py2+L.cell)}
-  }
-  ctx.stroke();
+  // 外框「面」：顶缘亮线 + 底缘压边，给出棋盘边界
+  ctx.lineWidth=2;ctx.strokeStyle=colMix(PAL.wallHi,WHITE,0.25);
+  ctx.strokeRect(1,1,L.W-2,L.H-2);
 }
 function drawBeans(ts){
   for(var y=0;y<ROWS;y++)for(var x=0;x<COLS;x++){
     var b=beans[y][x];if(!b)continue;
+    var p=enterP(y);if(p<=0)continue;
     var px=cx(x),py=cy(y);
-    if(b===1){ctx.fillStyle=PAL.muted;ctx.beginPath();ctx.arc(px,py,L.cell*0.09,0,7);ctx.fill()}
-    else if((ts/300|0)%2===0){ctx.fillStyle=PAL.warning;ctx.beginPath();ctx.arc(px,py,L.cell*0.28,0,7);ctx.fill()}
+    ctx.save();ctx.globalAlpha=p;
+    if(b===1){
+      var r=L.cell*0.11;
+      ctx.shadowColor="rgba(0,0,0,0.25)";ctx.shadowBlur=r*0.7;ctx.shadowOffsetY=r*0.35;
+      var g=ctx.createRadialGradient(px-r*0.3,py-r*0.35,r*0.1,px,py,r);
+      g.addColorStop(0,colMix(PAL.muted,WHITE,0.72));g.addColorStop(1,colMix(PAL.muted,BLACK,0.18));
+      ctx.fillStyle=g;ctx.beginPath();ctx.arc(px,py,r,0,Math.PI*2);ctx.fill();
+    }else{
+      var on=(ts/300|0)%2===0,rr2=L.cell*0.26*(on?1+0.08*Math.sin(ts/160):0.92);
+      ctx.shadowColor="rgba(0,0,0,0.35)";ctx.shadowBlur=rr2*0.9;ctx.shadowOffsetY=rr2*0.4;
+      var g2=ctx.createRadialGradient(px-rr2*0.3,py-rr2*0.35,rr2*0.12,px,py,rr2);
+      g2.addColorStop(0,colMix(PAL.warning,WHITE,0.8));g2.addColorStop(0.5,PAL.warning);g2.addColorStop(1,colShade(PAL.warning,-0.35));
+      ctx.fillStyle=g2;ctx.beginPath();ctx.arc(px,py,rr2,0,Math.PI*2);ctx.fill();
+      ctx.shadowBlur=0;ctx.shadowOffsetY=0;
+      ctx.fillStyle=WHITE;ctx.globalAlpha=p*0.9;
+      ctx.beginPath();ctx.ellipse(px-rr2*0.32,py-rr2*0.4,rr2*0.24,rr2*0.14,-0.5,0,Math.PI*2);ctx.fill();
+    }
+    ctx.restore();
   }
 }
 function drawPac(ts){
+  var p=enterP(12);if(p<=0)return;
   var r=L.cell*0.46,a=pac.mouth,open=(Math.sin(a)*0.5+0.5)*0.55+0.05;
   var ang=[-Math.PI/2,0,Math.PI/2,Math.PI][pac.dir]||0;
-  ctx.save();ctx.translate(pac.x,pac.y);ctx.rotate(ang);
-  ctx.fillStyle="#FFD44A";ctx.beginPath();//吃豆人黄 素材(D2)
+  ctx.save();ctx.globalAlpha=p;ctx.translate(pac.x,pac.y);ctx.rotate(ang);
+  ctx.shadowColor="rgba(0,0,0,0.35)";ctx.shadowBlur=r*0.5;ctx.shadowOffsetY=r*0.28;
+  var g=ctx.createRadialGradient(-r*0.3,-r*0.35,r*0.12,0,0,r*1.05);
+  g.addColorStop(0,colMix(PAL.body,WHITE,0.62));g.addColorStop(0.5,PAL.body);g.addColorStop(1,colShade(PAL.body,-0.32));
+  ctx.fillStyle=g;ctx.beginPath();
   ctx.moveTo(0,0);ctx.arc(0,0,r,open*Math.PI,(2-open)*Math.PI);ctx.closePath();ctx.fill();
-  ctx.fillStyle="#1C1C1E";ctx.beginPath();ctx.arc(r*0.15,-r*0.45,Math.max(1.5,r*0.12),0,7);ctx.fill();//眼睛 恒暗
+  ctx.shadowBlur=0;ctx.shadowOffsetY=0;
+  ctx.lineWidth=Math.max(1.2,r*0.1);ctx.strokeStyle=colShade(PAL.body,-0.42);ctx.stroke();
+  ctx.fillStyle=BLACK;ctx.beginPath();ctx.arc(r*0.15,-r*0.45,Math.max(1.5,r*0.12),0,Math.PI*2);ctx.fill();//眼睛 恒暗
   ctx.restore();
 }
 function drawPacDie(){
   var k=Math.min(1,dieT/0.9),r=L.cell*0.46*(1-k);
   if(r<=0.5)return;
-  ctx.fillStyle="#FFD44A";ctx.globalAlpha=1-k*0.5;//吃豆人黄 素材(D2)
+  var g=ctx.createRadialGradient(pac.x-r*0.3,pac.y-r*0.35,r*0.12,pac.x,pac.y,r*1.05);
+  g.addColorStop(0,colMix(PAL.body,WHITE,0.62));g.addColorStop(0.5,PAL.body);g.addColorStop(1,colShade(PAL.body,-0.32));
+  ctx.fillStyle=g;ctx.globalAlpha=1-k*0.5;
   ctx.beginPath();ctx.moveTo(pac.x,pac.y);
   ctx.arc(pac.x,pac.y,r,(0.9+k)*Math.PI,(2.1-k)*Math.PI);ctx.closePath();ctx.fill();
   ctx.globalAlpha=1;
 }
 function drawGhost(g,ts){
+  var p=enterP(6);if(p<=0)return;
   var r=L.cell*0.46;
   var frightOn=g.mode==="fright"&&fright>0&&!g.eye;
   var blink=frightOn&&fright<2&&(ts/200|0)%2===0;
-  ctx.save();ctx.translate(g.x,g.y+Math.sin(ts/120+g.wob)*L.cell*0.03);
-  //身体
-  ctx.fillStyle=g.eye?"#C9CDD3":frightOn?(blink?"#FFFFFF":"#5A7BE8"):g.color;
+  var base=g.eye?"#C9CDD3":frightOn?(blink?"#FFFFFF":"#5A7BE8"):g.color;//幽灵素材(D2)
+  ctx.save();ctx.globalAlpha=p;ctx.translate(g.x,g.y+Math.sin(ts/120+g.wob)*L.cell*0.03);
+  ctx.shadowColor="rgba(0,0,0,0.35)";ctx.shadowBlur=r*0.55;ctx.shadowOffsetY=r*0.3;
+  var gcol=ctx.createLinearGradient(0,-r*0.15,0,r*0.8);
+  gcol.addColorStop(0,colMix(base,WHITE,0.28));gcol.addColorStop(0.45,base);gcol.addColorStop(1,colShade(base,-0.3));
+  ctx.fillStyle=gcol;
   ctx.beginPath();ctx.arc(0,-r*0.15,r,Math.PI,0);
   ctx.lineTo(r,r*0.75);
   var n=3,w2=r*2/n;
@@ -500,9 +593,12 @@ function drawGhost(g,ts){
     ctx.lineTo(bx,up?r*0.5:r*0.75);ctx.lineTo(bx+w2/2,up?r*0.75:r*0.5);
   }
   ctx.closePath();ctx.fill();
-  //眼睛
+  ctx.shadowBlur=0;ctx.shadowOffsetY=0;
+  ctx.globalAlpha=p*0.55;ctx.fillStyle=WHITE;
+  ctx.beginPath();ctx.ellipse(-r*0.3,-r*0.42,r*0.34,r*0.18,-0.5,0,Math.PI*2);ctx.fill();
+  ctx.globalAlpha=p;
   var ex=DX[g.dir]*r*0.22,ey=DY[g.dir]*r*0.22;
-  ctx.fillStyle="#FFFFFF";
+  ctx.fillStyle=WHITE;
   ctx.beginPath();ctx.arc(-r*0.34+ex,-r*0.2+ey,r*0.26,0,7);ctx.arc(r*0.34+ex,-r*0.2+ey,r*0.26,0,7);ctx.fill();
   if(!g.eye){
     ctx.fillStyle=frightOn&&blink?"#E05A4E":"#2B3444";//惊惧态 素材(D2)
@@ -556,8 +652,10 @@ $("ovBtn").addEventListener("click",function(){
   if(state==="paused")togglePause();else newGame();
 });
 window.addEventListener("resize",resize);
-palLoad();resize();resetBeans();spawnAll();
+palLoad();resize();resetBeans();spawnAll();markEnter();
 $("stBest").textContent=best;
+setBtn($("btnPause"),"暂停","pause");
+setBtn($("ovBtn"),"开始游戏","play");
 showOverlay();//初始为开始面板
 requestAnimationFrame(loop);
 syncSaveFromServer();

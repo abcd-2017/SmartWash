@@ -77,7 +77,97 @@ const BASE_TOKENS = new Set([
   "--g-water", "--g-scrim", "--g-shadow", "--g-radius", "--g-radius-btn", "--g-radius-inner", "--g-gap", "--g-on-primary",
   "--g-btn-primary"
 ]);
-const MATERIAL_PREFIX = /^--g-(bp|bshade|field|grid|snake|food|sky|sky1|sky2|cloud|cld|gnd|gnl|pipe|pipecap|pipeln|bird1|bird2|birdln|wing|beak|bd|line|star|ball|ballln|maze|card|cell|cellhi|celllo|open|openln|n[1-8]|fs-|felt|felt2|rail|pocket|fr-|ss-|moon|moon2|board|tilesuper|st-|mt-)/;
+const MATERIAL_PREFIX = /^--g-(bp|cb-|cz-|cbr-|ch-|bc-|bshade|bz-|field|grid|snake|food|sky|sky1|sky2|cloud|cld|gnd|gnl|pipe|pipecap|pipeln|bird1|bird2|birdln|wing|beak|bd|bd-|line|star|ball|ballln|maze|card|cell|cellhi|celllo|open|openln|n[1-8]|fs-|felt|felt2|rail|pocket|fr-|ss-|moon|moon2|board|tilesuper|st-|mt-|mzp-|ld-|low-|mp-|mm-|dpk-|pys-|ds-|mg-|fc-|gs-|gm-|hp-|bj-|am-|bl-|bel-|pn-|pnt-|pp-|jj-|su-|sb-|sbu-|sps-|acc-|rl-|sol-|mio-|el-|mnc-|msg-|xq-|ms-|ps-|lo-|nkb-|ng-|cd-|sk-|ls-|hf-|fut-|kro-|ws-|cw-|os-|hl-|sl-|np-|ah-|afb-|ast-|abp-|aq-|af-|at-|bgm-|hm-|ic-|id-|bs-|bt-|bm-|bn-|bb-|belt-|bal-|ck-|cr-|dc-|sm-|g2048-|llk-|m3-|ska-|poem-|icr-|pf-|pw-|pt-|pg-|rp-|rf-|th-|sf-|xky-|rdl-|qr-|c4-|mor-|rv-|kt-|lg-|sdk-|cs-|db-|dudo-|fi-|flc-|fuse-|lnd-|lr-|ll-|hj-|jd-|kd-|kl-|kf-|g24-|gmesh-|hw-|pot-|pac-|pfc-|peg-|mc-|nb-|mf-|mr-|mst-|scl-|sc-|ssl-|rc-|rh-|rcl-|rpic-|rm-|stc-|tet-|tb-|tc-|td-|tg-|wo-|wd-|trb-|tsp-|vd-|wr-|wj-)/;
+// 说明：bs- 覆盖 bell-strike 与 bubble-shooter 的素材 token（bubble-shooter 2026-11-27 复用登记）
+//      bal- 覆盖 balance-stack 的素材 token（2026-11-27 渲染层重做登记）
+//      cr- 覆盖 color-route 的素材 token（2026-11-27 渲染层重做登记）
+//      dc- 覆盖 domino-chain 的素材 token（2026-11-27 渲染层重做登记）
+//      g2048- 覆盖 g2048 的素材 token（2026-11-27 渲染层重做登记）
+//      ska- 覆盖 suika 的素材 token（2026-11-27 渲染层重做登记）
+//      llk- 覆盖 lianliankan 的素材 token（lianliankan 2026-11-27 渲染层重做登记）
+//      m3- 覆盖 match3 的素材 token（match3 2026-11-27 渲染层重做登记）
+//      sm- 覆盖 stack-match 的素材 token（stack-match 2026-11-27 渲染层重做登记）
+//      pnt- 覆盖 pentomino 的素材 token（pentomino 2026-11-27 渲染层重做登记）
+//      pf- 覆盖 poem-fill 的素材 token（poem-fill 2026-11-27 渲染层重做登记）
+//      poem- 覆盖 poem-order 的素材 token（poem-order 2026-11-27 渲染层重做登记）
+//      ch- 覆盖 char-rain 的素材 token（char-rain 2026-11-27 渲染层重做登记）
+//      ic- 覆盖 idiom-chain 的素材 token（idiom-chain 2026-11-27 渲染层重做登记）
+//      icr- 覆盖 idiom-cross 的素材 token（idiom-cross 2026-11-27 渲染层重做登记）
+//      id- 覆盖 idiom 的素材 token（idiom 2026-11-27 渲染层重做登记）
+//      hm- 覆盖 hangman 的素材 token（hangman 2026-11-27 渲染层重做登记）
+//      pw- 覆盖 pinyin-write 的素材 token（pinyin-write 2026-11-27 渲染层重做登记）
+//      pt- 覆盖 pinyin-tone 的素材 token（pinyin-tone 2026-11-27 渲染层重做登记）
+//      th- 覆盖 typo-hunt 的素材 token（typo-hunt 2026-11-27 渲染层重做登记）
+//      sf- 覆盖 sentence-fix 的素材 token（sentence-fix 2026-11-27 渲染层重做登记）
+//      xky- 覆盖 xiehouyu 的素材 token（xiehouyu 2026-11-27 渲染层重做登记）
+//      rdl- 覆盖 riddle 的素材 token（riddle 2026-11-27 渲染层重做登记）
+//      msg- 覆盖 minishogi 的素材 token（minishogi 2026-11-27 渲染层重做登记）
+//      ms-  覆盖 mahjong-solitaire 与 minesweeper 的素材 token（2026-11-27 渲染层重做登记）
+//      c4-  覆盖 connect-four 的素材 token（connect-four 2026-11-27 渲染层重做登记）
+//      qr- 覆盖 quoridor-lite 的素材 token（quoridor-lite 2026-11-27 渲染层重做登记）
+//      mor- 覆盖 morris-line 的素材 token（morris-line 2026-11-27 渲染层重做登记）
+//      ck-  覆盖 checkers 的素材 token（checkers 2026-11-27 渲染层重做登记）
+//      ls- 覆盖 ludo-solo 的素材 token（ludo-solo 2026-11-27 渲染层重做登记）
+//      lg- 覆盖 l-game 的素材 token（l-game 2026-11-27 渲染层重做登记）
+//      sk-  覆盖 sokoban 的素材 token（sokoban 2026-11-27 渲染层重做登记；前缀原已在白名单，本次补注释）
+//      sdk- 覆盖 sudoku 的素材 token（sudoku 2026-11-27 渲染层重做登记）
+//      st-  覆盖 tsumego-go 的素材 token（tsumego-go 2026-11-27 渲染层重做复用登记，st- 原属本游戏）
+//      cz-  覆盖 chai-zi 的素材 token（chai-zi 2026-11-27 渲染层重做登记）
+//      cbr- 覆盖 coaster-build 的素材 token（coaster-build 2026-11-27 渲染层重做登记）
+//      cb-  覆盖 chem-balance 的素材 token（chem-balance 2026-11-27 渲染层重做登记）
+//      fi- 覆盖 fishing 的素材 token（fishing 2026-11-27 渲染层立体化重做登记）
+//      flc- 覆盖 flow-connect 的素材 token（flow-connect 2026-11-27 渲染层重做登记）
+//      fuse- 覆盖 fuse-cut 的素材 token（fuse-cut 2026-11-27 渲染层重做登记）
+//      bt-  覆盖 binary-taku 的素材 token（binary-taku 2026-11-27 渲染层重做登记；前缀原属 beat-tap，本次复用）
+//      bm-  覆盖 bomberman 的素材 token（bomberman 2026-11-27 渲染层重做登记）
+//      bn-  覆盖 bonsai-trim 的素材 token（bonsai-trim 2026-11-27 渲染层重做登记）
+//      ld-  覆盖 laundry-day 的素材 token（laundry-day 2026-11-27 渲染层立体化重做登记）
+//      low- 覆盖 logic-owners 的素材 token（logic-owners 2026-11-27 渲染层重做登记）
+//      mp-  覆盖 magnet-poles 的素材 token（magnet-poles 2026-11-27 渲染层重做登记；原 st- 前缀收敛）
+//      g24- 覆盖 game24 的素材 token（game24 2026-11-27 渲染层重做登记）
+//      gmesh- 覆盖 gear-mesh 的素材 token（gear-mesh 2026-11-27 渲染层重做登记）
+//      hw-  覆盖 hashi-wire 的素材 token（hashi-wire 2026-11-27 渲染层重做登记；原 st- 收敛为 hw-）
+//      hj-  覆盖 helix-jump 的素材 token（helix-jump 2026-11-27 渲染层重做登记；前缀原复用 st-，本次收敛为游戏前缀）
+//      jd-  覆盖 jungle-dark 的素材 token（jungle-dark 2026-11-27 渲染层重做登记）
+//      kd-  覆盖 kite-duel 的素材 token（kite-duel 2026-11-27 渲染层重做登记）
+//      kl-  覆盖 klotski 的素材 token（klotski 2026-11-27 渲染层重做登记）
+//      kf-  覆盖 knot-free 的素材 token（knot-free 2026-11-27 渲染层重做登记）
+//      lnd- 覆盖 lane-defense 的素材 token（lane-defense 2026-11-27 渲染层重做登记；原 st- 收敛为游戏前缀）
+//      lr-  覆盖 lantern-rise 的素材 token（lantern-rise 2026-11-27 渲染层重做登记；原 st- 收敛为游戏前缀）
+//      ll-  覆盖 latte-line 的素材 token（latte-line 2026-11-27 渲染层重做登记；原 st- 收敛为游戏前缀）
+//      pg-  覆盖 power-grid 的素材 token（power-grid 2026-11-27 渲染层重做登记）
+//      rp-  覆盖 ring-puzzle 的素材 token（ring-puzzle 2026-11-27 渲染层重做登记；原 st- 收敛为游戏前缀）
+//      rf-  覆盖 ripple-fill 的素材 token（ripple-fill 2026-11-27 渲染层重做登记）
+//      pac- 覆盖 pacman 的素材 token（pacman 2026-11-28 渲染层重做登记）
+//      pfc- 覆盖 paper-fold-cut 的素材 token（paper-fold-cut 2026-11-28 渲染层重做登记；原 st- 收敛为游戏前缀）
+//      peg- 覆盖 peg-solitaire 的素材 token（peg-solitaire 2026-11-28 渲染层重做登记）
+//      mc-  覆盖 money-change 的素材 token（money-change 2026-11-28 渲染层重做登记）
+//      nb-  覆盖 nut-bolt 的素材 token（nut-bolt 2026-11-28 渲染层重做登记）
+//      mf-  覆盖 map-fold 的素材 token（map-fold 2026-11-28 渲染层重做登记；原 st- 收敛为游戏前缀）
+//      mr-  覆盖 marble-run 的素材 token（marble-run 2026-11-28 渲染层重做登记；原 st- 收敛为游戏前缀）
+//      mst- 覆盖 matchstick 的素材 token（matchstick 2026-11-28 渲染层重做登记）
+//      scl- 覆盖 scale-ball 的素材 token（scale-ball 2026-11-28 渲染层重做登记）
+//      sc-  覆盖 signal-cross 的素材 token（signal-cross 2026-11-28 渲染层重做登记）
+//      ssl- 覆盖 ski-slalom 的素材 token（ski-slalom 2026-11-28 渲染层重做登记）
+//      rc-  覆盖 rope-cut 的素材 token（rope-cut 2026-11-28 渲染层重做登记；原 st- 收敛为游戏前缀）
+//      rpic- 覆盖 rotate-pic 的素材 token（rotate-pic 2026-11-28 渲染层重做登记）
+//      rm-  覆盖 rubik-mini 的素材 token（rubik-mini 2026-11-28 渲染层重做登记；原 st- 收敛为游戏前缀）
+//      rc-  覆盖 river-cross 的素材 token（river-cross 2026-11-28 渲染层重做登记）
+//      rh-  覆盖 road-hop 的素材 token（road-hop 2026-11-28 渲染层重做登记）
+//      rcl- 覆盖 rock-climb 的素材 token（rock-climb 2026-11-28 渲染层重做登记）
+//      stc- 覆盖 steady-chop 的素材 token（steady-chop 2026-11-28 渲染层重做登记）
+//      tet- 覆盖 tetris 的素材 token（tetris 2026-11-28 渲染层重做登记）
+//      tb-  覆盖 torch-bridge 的素材 token（torch-bridge 2026-11-28 渲染层重做登记；原 st- 收敛）
+//      tc-  覆盖 tower-control 的素材 token（tower-control 2026-11-28 渲染层重做登记；原 st-tc- 收敛为游戏前缀）
+//      td-  覆盖 tower-defense 的素材 token（tower-defense 2026-11-28 渲染层重做登记；原 st- 收敛为游戏前缀）
+//      tg-  覆盖 treasure-grid 的素材 token（treasure-grid 2026-11-28 渲染层重做登记；原 st- 收敛为游戏前缀）
+//      trb- 覆盖 trebuchet 的素材 token（trebuchet 2026-11-28 渲染层重做登记；原 st-tb- 收敛为游戏前缀）
+//      tsp- 覆盖 tsuro-path 的素材 token（tsuro-path 2026-11-28 渲染层重做登记）
+//      vd-  覆盖 virus-defense 的素材 token（virus-defense 2026-11-28 渲染层重做登记；原 st- 收敛为游戏前缀）
+//      wo-  覆盖 weight-order 的素材 token（weight-order 2026-11-28 渲染层重做登记；原 st- 收敛为游戏前缀）
+//      wd-  覆盖 well-drill 的素材 token（well-drill 2026-11-28 渲染层重做登记；原 st- 收敛为游戏前缀）
+//      wr-  覆盖 warehouse-rush 的素材 token（warehouse-rush 2026-11-28 渲染层重做登记；原 st- 收敛为游戏前缀）
+//      wj-  覆盖 water-jug 的素材 token（water-jug 2026-11-28 渲染层重做登记；原 st- 收敛为游戏前缀）
 const FONT_TIER = new Set([36, 28, 22, 18, 16, 14, 12]);
 const SHELL_RADIUS = new Set([16, 14, 12, 10]);
 
@@ -333,6 +423,7 @@ function audit(name) {
   for (const m of html.matchAll(/([^{}]+)\{([^}]*)\}/g)) {
     const sel = m[1].replace(/\/\*[\s\S]*?\*\//g, "").trim(), body = m[2];
     const last = sel.split(/\s+/).pop().toLowerCase();
+    if (last.includes("::")) continue;   // ::before/::after 是装饰伪元素，不是可点控件
     const isBtn = last === "button" || INTERACTIVE_PART.test(last);
     if (!isBtn || /\.card\b|\.cell\b/.test(last)) continue;
     const mh = body.match(/min-height:\s*(\d+(?:\.\d+)?)px/);

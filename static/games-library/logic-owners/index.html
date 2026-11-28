@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#F5F6F3">
 <title>谁养鱼</title>
 <style>
-  /*token:GAME-THEME.md §2 基线（值与基线一致）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-hairline:#EFF1EE;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;color-scheme:light }
-  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-hairline:#262A27;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
+  /*token:GAME-THEME.md §2 基线 + §3 素材 token（--g-low-* 题板纸面 / 格砖 / 选中格）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-on-primary:#FFFFFF;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-hairline:#EFF1EE;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;--g-low-paper1:#F6FAF6;--g-low-paper2:#E7F0E9;--g-low-cell1:#FFFFFF;--g-low-cell2:#EDF4EF;--g-low-sel:#CDE7D9;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-hairline:#262A27;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-low-paper1:#171C18;--g-low-paper2:#10140F;--g-low-cell1:#262B27;--g-low-cell2:#1A1E1B;--g-low-sel:#245C40;color-scheme:dark }
 
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
@@ -26,29 +26,38 @@
   header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
   .sub { font-size: 14px; color: var(--g-muted); }
   .stats { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; min-width: 0; animation: rise .38s ease-out both; }
+  .stat:nth-child(2) { animation-delay: 40ms; }
+  .stat:nth-child(3) { animation-delay: 80ms; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
   .stat .val { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
   .stat .val.low { color: var(--g-danger); }
-  .stage { background: var(--g-surface); border-radius: var(--g-radius-inner); box-shadow: var(--g-shadow); padding: 12px; }
-  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .stat .val.pop { animation: valpop .24s ease-out; }
+  .stage { background: linear-gradient(180deg, var(--g-low-paper1), var(--g-low-paper2)); border-radius: var(--g-radius-inner); box-shadow: var(--g-shadow); padding: 12px; animation: fadein .3s ease-out both; }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; transition: color .16s ease-out; }
   .tools { display: flex; gap: 8px; margin-bottom: 8px; }
   .btn {
     min-height: 44px; padding: 0 14px; flex: 1;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
     border: 0; border-radius: var(--g-radius-btn);
     background: var(--g-surface2); color: var(--g-text);
     font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    transition: transform .14s ease-out, opacity .16s ease-out, background .16s ease-out;
   }
-  .btn.primary { background: var(--g-btn-primary); color: #fff; font-size: 16px; font-weight: 600; }
-  .btn:active { opacity: .85; }
+  .btn.primary { background: var(--g-btn-primary); color: var(--g-on-primary); font-size: 16px; font-weight: 600; }
+  .btn:active { transform: scale(.96); }
   .btn:disabled { opacity: .35; }
+  .swi { display: inline-block; vertical-align: -0.14em; flex: none; }
   .ctl.wide { width: 100%; }
   .ctl {
     min-height: 48px; width: 100%; border: 0; border-radius: var(--g-radius-btn);
-    background: var(--g-btn-primary); color: #fff;
+    background: var(--g-btn-primary); color: var(--g-on-primary);
+    box-shadow: var(--g-shadow);
     font-family: inherit; font-size: 18px; font-weight: 600; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    transition: transform .14s ease-out, opacity .16s ease-out, background .16s ease-out;
   }
-  .ctl:active { opacity: .75; }
+  .ctl:active { transform: scale(.96); }
   .ctl[disabled] { opacity: .45; }
   .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
   .overlay {
@@ -58,13 +67,15 @@
   }
   .overlay.show { display: flex; animation: fadein .2s ease-out; }
   @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes valpop { 0% { transform: scale(1); } 40% { transform: scale(1.14); } 100% { transform: scale(1); } }
   .panel {
     width: 100%; max-width: 340px; padding: 22px 18px;
     background: var(--g-surface); border-radius: var(--g-radius);
     box-shadow: var(--g-shadow); text-align: center;
     animation: pop .25s ease-out;
   }
-  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  @keyframes pop { 0% { transform: scale(.9); opacity: 0; } 60% { transform: scale(1.03); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
   .panel h2 { margin: 0 0 6px; font-size: 18px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
   .panel .btn { width: 100%; margin-bottom: 8px; }
@@ -74,34 +85,43 @@
     min-height: 44px; border: 0; border-radius: var(--g-radius-inner);
     background: var(--g-surface2); color: var(--g-text);
     font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer;
+    transition: transform .14s ease-out, background .16s ease-out;
   }
+  .lvbtn:active { transform: scale(.96); }
   .lvbtn[disabled] { opacity: .35; }
   .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
 
   /* 谁养鱼专属 */
   .pgrid { display: grid; gap: 6px; margin-bottom: 12px; }
   .prow { display: grid; gap: 6px; }
-  .phouse { font-size: 14px; color: var(--g-muted); display: flex; align-items: center; justify-content: center; background: var(--g-surface2); border-radius: 10px; min-height: 44px; }
+  .phouse { font-size: 14px; color: var(--g-on-soft); display: flex; align-items: center; justify-content: center; background: linear-gradient(180deg, var(--g-primary-soft), var(--g-low-paper2)); border-radius: 10px; min-height: 44px; font-weight: 600; }
   .cell {
     min-height: 44px; border: 1px solid var(--g-border); border-radius: 10px;
-    background: var(--g-bg); color: var(--g-text);
+    background: linear-gradient(180deg, var(--g-low-cell1), var(--g-low-cell2)); color: var(--g-text);
+    box-shadow: 0 1px 2px rgba(20,40,30,.05);
     font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer; padding: 0 4px;
+    transition: transform .14s ease-out, box-shadow .16s ease-out, background .16s ease-out;
+    animation: rise .3s ease-out both;
   }
-  .cell.empty { color: var(--g-muted); border-style: dashed; }
-  .cell.cur { outline: 2px solid var(--g-primary-deep); outline-offset: 1px; }
-  .chead { font-size: 12px; color: var(--g-muted); display: flex; align-items: center; justify-content: center; min-height: 28px; }
+  .cell:active { transform: scale(.96); }
+  .cell.empty { color: var(--g-muted); border-style: dashed; background: var(--g-low-paper2); box-shadow: none; }
+  .cell.cur { background: var(--g-low-sel); color: var(--g-on-soft); border-color: var(--g-primary-deep); box-shadow: 0 2px 8px rgba(20,40,30,.12); outline: 2px solid var(--g-primary-deep); outline-offset: 1px; }
+  .chead { font-size: 12px; color: var(--g-muted); display: flex; align-items: center; justify-content: center; min-height: 28px; font-weight: 600; }
   .clues { list-style: none; margin: 0; padding: 10px 4px 2px; border-top: 1px solid var(--g-hairline); }
-  .clues li { font-size: 14px; color: var(--g-muted); line-height: 1.7; display: flex; gap: 6px; }
-  .clues .no { color: var(--g-primary-deep); font-weight: 700; flex: 0 0 auto; }
+  .clues li { font-size: 14px; color: var(--g-muted); line-height: 1.7; display: flex; gap: 6px; animation: rise .3s ease-out both; }
+  .clues .no { color: var(--g-on-soft); background: var(--g-primary-soft); border-radius: 8px; font-weight: 700; flex: 0 0 auto; padding: 0 6px; }
   .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--g-hairline); min-height: 54px; align-content: flex-start; }
   .chip {
     min-height: 44px; padding: 0 16px; border: 1px solid var(--g-border); border-radius: 10px;
-    background: var(--g-bg); color: var(--g-text);
+    background: linear-gradient(180deg, var(--g-low-cell1), var(--g-low-cell2)); color: var(--g-text);
+    box-shadow: 0 1px 2px rgba(20,40,30,.05);
     font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    transition: transform .14s ease-out, background .16s ease-out;
   }
-  .chip.wipe { color: var(--g-danger); }
+  .chip:active { transform: scale(.96); }
+  .chip.wipe { color: var(--g-danger); border-color: var(--g-danger); }
 
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; animation-delay:0ms !important; transition-duration:.01ms !important} }
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 </style>
 <script>
@@ -133,12 +153,12 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
   </div>
   <p class="msg" id="msg" role="status" aria-live="polite">点一个格子，再从下方选项里挑一个填入；全部填完即可提交</p>
   <div class="tools">
-    <button class="btn" id="btnHint">提示</button>
-    <button class="btn" id="btnClear">清空</button>
-    <button class="btn" id="btnReset">重开</button>
-    <button class="btn" id="btnLv">选关</button>
+    <button class="btn" id="btnHint"><span class="lbl">提示</span></button>
+    <button class="btn" id="btnClear"><span class="lbl">清空</span></button>
+    <button class="btn" id="btnReset"><span class="lbl">重开</span></button>
+    <button class="btn" id="btnLv"><span class="lbl">选关</span></button>
   </div>
-  <button class="ctl wide" id="btnSubmit">提交答案</button>
+  <button class="ctl wide" id="btnSubmit"><span class="lbl">提交答案</span></button>
   <p class="foot">键盘：方向键选格 · Enter 打开选项或提交 · 1-5 填值 · Esc 关闭 · H 提示 · R 重开 · L 选关</p>
 </div>
 <div class="overlay" role="dialog" aria-modal="true" id="overlay">
@@ -146,10 +166,27 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
     <h2 id="ovTitle">过关！</h2>
     <p class="desc" id="ovDesc"></p>
     <div class="lvgrid" id="lvgrid" hidden></div>
-    <button class="btn primary" id="ovBtn">下一关</button>
+    <button class="btn primary" id="ovBtn"><span class="lbl">下一关</span></button>
   </div>
 </div>
 
+<script>
+/* 内联图标库：照抄本库 window.SW_ICON 结构（24 viewBox / currentColor / aria-hidden / 零外链） */
+window.SW_ICON=function(n,s){s=s||"";var P={
+ 'bulb':'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.8.7 1 1.5 1 2.5h6c0-1 .2-1.8 1-2.5A6 6 0 0 0 12 3z"/>',
+ 'trash':'<path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13M10 11v6M14 11v6"/>',
+ 'rotate':'<path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/>',
+ 'grid':'<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>',
+ 'check':'<path d="M4 12.5l5 5L20 6.5"/>','play':'<path d="M8 5v14l11-7z"/>',
+ 'x':'<path d="M6 6l12 12M18 6L6 18"/>','undo':'<path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/>'
+};
+var fill={'play':1,'check':1};
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
+};
+window.setBtnIcon=function(id,name){var b=document.getElementById(id);if(!b)return;var old=b.querySelector("svg");if(old)old.remove();b.insertAdjacentHTML("afterbegin",window.SW_ICON(name));};
+setBtnIcon("btnHint","bulb");setBtnIcon("btnClear","trash");setBtnIcon("btnReset","rotate");
+setBtnIcon("btnLv","grid");setBtnIcon("btnSubmit","check");setBtnIcon("ovBtn","play");
+</script>
 <script>
 (function(){
 "use strict";
@@ -254,7 +291,7 @@ function openLevelSelect(){
   }
   $("ovTitle").textContent="选择关卡";
   $("ovDesc").textContent="已通关的关卡会标绿";
-  $("ovBtn").textContent="取消";
+  setLbl("ovBtn","取消");setBtnIcon("ovBtn","x");
   $("overlay").classList.add("show");
 }
 function hideOverlay(){$("overlay").classList.remove("show")}
@@ -531,7 +568,7 @@ function selfCheck(){
     var e=safeVerify(LEVELS[i],i);
     if(e&&!err)err="第 "+(i+1)+" 关 "+e;
   }
-  if(err)say("数据校验告警："+err);
+  if(err&&window.console&&console.warn)console.warn("逻辑校验："+err);   // 开发期自检只进控制台，不占用玩家界面
 }
 function safeVerify(seed,idx){
   try{
@@ -542,6 +579,9 @@ function safeVerify(seed,idx){
 /* ---------- 状态与渲染 ---------- */
 function $(id){return document.getElementById(id)}
 function say(t){$("msg").textContent=t}
+/* 动态按钮文案只改 .lbl 文本节点，避免抹掉已注入的 SVG 图标 */
+function setLbl(id,txt){var b=$(id),s=b?b.querySelector(".lbl"):null;if(s)s.textContent=txt;else if(b)b.textContent=txt}
+function popVal(id){var e=$(id);if(!e)return;e.classList.remove("pop");void e.offsetWidth;e.classList.add("pop")}
 var lv=save.lv,L=null,table=[],curR=0,curC=0,chances=3,done=false,panelOpen=false;
 var CATKEYS=["pets","drinks","colors"];
 function loadLevel(n){
@@ -594,6 +634,7 @@ function renderGrid(){
         (function(c){
           var b=document.createElement("button");
           b.className="cell";
+          b.style.animationDelay=Math.min(p*40,200)+"ms";   /* 入场按行错落 40ms，总量 ≤600ms */
           b.setAttribute("data-p",p);b.setAttribute("data-c",c);
           b.addEventListener("click",function(){openCell(c,p);});
           row.appendChild(b);
@@ -633,6 +674,7 @@ function renderClues(){
   var ul=$("clues");ul.innerHTML="";
   for(var i=0;i<L.clues.length;i++){
     var li=document.createElement("li");
+    li.style.animationDelay=Math.min(i*30,240)+"ms";
     var no=document.createElement("span");no.className="no";no.textContent="线索"+(i+1);
     li.appendChild(no);
     li.appendChild(document.createTextNode(clueText(L.clues[i])));
@@ -676,13 +718,15 @@ function submit(){
   var ok=true;
   for(var c=0;c<L.cats;c++)for(var p=0;p<L.n;p++)if(table[c][p]!==L.sol[c][p])ok=false;
   if(ok){winLevel();return;}
-  chances--;updStats();
+  chances--;updStats();popVal("stCh");
   if(chances<=0){failLevel("表中还有矛盾，机会用完了");return;}
   say("提交的表有矛盾（对照线索逐条检查），还剩 "+chances+" 次机会");
 }
 function hint(){
-  if(done)return;
-  if(!panelOpen)panelOpen=true;
+  if(done||!L)return;
+  /* 提示只作用于已选中的空格：面板未打开或光标格已填时不动表，避免覆盖已填值 */
+  if(!panelOpen){say("先点选一个格子再用提示");return;}
+  if(table[curC][curR]>=0){say("光标格已填，提示留给空格");return;}
   table[curC][curR]=L.sol[curC][curR];
   paintCells();renderChips();updStats();
   say("已把光标格填上正确答案；想想为什么");
@@ -693,14 +737,15 @@ function winLevel(){
   if(GB.available)GB.reportScore(GAME_KEY,{metricValue:lv+1,metricExtra:3-Math.max(0,chances)}).catch(function(){});
   $("ovTitle").textContent=(lv>=LEVELS.length-1)?"全部通关！":"过关！";
   $("ovDesc").innerHTML=(L.cats===2?"宠物×饮料":"宠物×饮料×颜色")+" "+L.n+" 号房子全推出 · 剩余机会 "+chances+(lv<LEVELS.length-1?"<br>已解锁第 "+(lv+2)+" 关":"<br>40 关全部完成");
-  $("ovBtn").textContent=(lv>=LEVELS.length-1)?"回到第 1 关":"下一关";
+  setLbl("ovBtn",(lv>=LEVELS.length-1)?"回到第 1 关":"下一关");
+  setBtnIcon("ovBtn",(lv>=LEVELS.length-1)?"rotate":"play");
   $("overlay").classList.add("show");
 }
 function failLevel(reason){
   done=true;panelOpen=false;paintCells();renderChips();
   $("ovTitle").textContent="推理失败";
   $("ovDesc").textContent=reason+"。重开本关再来一次，提示键可以帮你确认一格。";
-  $("ovBtn").textContent="重开本关";
+  setLbl("ovBtn","重开本关");setBtnIcon("ovBtn","rotate");
   $("overlay").classList.add("show");
 }
 /* ---------- 键盘 ---------- */
@@ -742,7 +787,6 @@ $("btnLv").addEventListener("click",function(){if(!done)openLevelSelect();});
 $("btnSubmit").addEventListener("click",submit);
 $("ovBtn").addEventListener("click",function(){
   hideOverlay();
-  if(done&&chances<=0&&filled()&&!filled()){loadLevel(lv);return;}
   if(chances<=0){loadLevel(lv);return;}
   if(done){
     if(lv>=LEVELS.length-1){lv=0;save.lv=0;persist();loadLevel(0);}

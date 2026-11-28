@@ -7,8 +7,8 @@
 <title>24点</title>
 <style>
   /*token:GAME-THEME.md §2 基线（纯 DOM 实现，无 canvas 素材色；主题随 CSS 变量自动切换）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light }
-  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-on-primary:#FFFFFF;--g-hairline:#EFF1EE;--g-g24-num1:#FFFDF8;--g-g24-num2:#F1E7D4;--g-g24-op1:#E8F6EF;--g-g24-op2:#CBE8D8;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-hairline:#262A27;--g-g24-num1:#2B2A24;--g-g24-num2:#1C1B17;--g-g24-op1:#1D3229;--g-g24-op2:#12241B;color-scheme:dark }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
   html, body { margin: 0; padding: 0; }
@@ -24,38 +24,47 @@
   .wrap { width: 100%; max-width: 480px; }
   header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
   .sub { font-size: 14px; color: var(--g-muted); }
+  /* 入场错落：stats 0/40/80/120ms，nums 140ms，expr 180ms，pad 220ms，tools 260ms，总 ≤580ms */
   .stats { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 2px; text-align: center; line-height: 1.3; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 2px; text-align: center; line-height: 1.3; animation: rise .32s ease-out both; }
+  .stat:nth-child(2) { animation-delay: 40ms; }
+  .stat:nth-child(3) { animation-delay: 80ms; }
+  .stat:nth-child(4) { animation-delay: 120ms; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
   .stat .val { font-size:18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
   .stat .val.low { color: var(--g-danger); }
-  .nums { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
-  .num { min-height: 64px; border: 1px solid var(--g-border); border-radius: var(--g-radius-inner); background: var(--g-surface); color: var(--g-text); font-family: inherit; font-size: 28px; font-weight: 700; cursor: pointer; }
-  .num:active { background: var(--g-primary-soft); }
-  .num.off { opacity: .3; }
-  .expr { min-height: 56px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 8px 10px; border: 1px dashed var(--g-border); border-radius: var(--g-radius-inner); background: var(--g-surface); margin-bottom: 12px; overflow-x: auto; }
+  .nums { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; animation: rise .32s ease-out both; animation-delay: 140ms; }
+  /* 数字牌：渐变牌面 + 顶光 + 落地投影（轻立体） */
+  .num { min-height: 64px; border: 0; border-radius: var(--g-radius-inner); background: linear-gradient(180deg,var(--g-g24-num1),var(--g-g24-num2)); box-shadow: inset 0 1px 0 rgba(255,255,255,.75), 0 2px 8px rgba(20,40,30,.14); color: var(--g-text); font-family: inherit; font-size: 28px; font-weight: 700; cursor: pointer; transition: transform .14s ease-out, box-shadow .16s ease-out, opacity .16s ease-out; }
+  .num:active { transform: scale(.96); }
+  .num.off { opacity: .3; box-shadow: none; }
+  /* 算式槽：内凹「面」+ 顶影 + 底缘亮线 */
+  .expr { min-height: 56px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 8px 10px; border: 0; border-radius: var(--g-radius-inner); background: linear-gradient(180deg,var(--g-surface2),var(--g-surface)); box-shadow: inset 0 2px 6px rgba(20,40,30,.12), 0 1px 0 rgba(255,255,255,.6); margin-bottom: 12px; overflow-x: auto; animation: rise .32s ease-out both; animation-delay: 180ms; }
   .expr .ph { color: var(--g-muted); font-size: 14px; }
-  .chip { display: inline-flex; align-items: center; justify-content: center; min-width: 36px; padding: 2px 8px; border-radius: 10px; font-size: 22px; font-weight: 600; }
-  .chip.n { background: var(--g-primary-soft); color: var(--g-on-soft); }
+  .chip { display: inline-flex; align-items: center; justify-content: center; min-width: 36px; padding: 2px 8px; border-radius: 10px; font-size: 22px; font-weight: 600; box-shadow: inset 0 1px 0 rgba(255,255,255,.6), 0 1px 3px rgba(20,40,30,.14); }
+  .chip.n { background: linear-gradient(180deg,var(--g-primary-soft),var(--g-g24-op2)); color: var(--g-on-soft); }
   .chip.o { color: var(--g-text); }
   .chip.p { color: var(--g-muted); }
-  .pad { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
-  .op { min-height: 44px; border: 1px solid var(--g-border); border-radius: var(--g-radius-btn); background: var(--g-surface); color: var(--g-text); font-family: inherit; font-size: 22px; font-weight: 600; cursor: pointer; }
-  .op:disabled { opacity: .3; }
-  .op:active { background: var(--g-surface2); }
-  .tools { display: flex; gap: 8px; }
-  .btn { min-height: 44px; padding: 0 14px; flex: 1; border: 0; border-radius: var(--g-radius-btn); background: var(--g-btn-primary); color: #fff; font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer; }
-  .btn:active { opacity: .85; }
-  .btn.ghost { background: var(--g-surface2); color: var(--g-text); }
-  .btn:disabled { opacity: .3; }
+  .pad { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; animation: rise .32s ease-out both; animation-delay: 220ms; }
+  /* 运算符键：品牌绿渐变键面 + 顶光 + 投影 */
+  .op { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 0; border-radius: var(--g-radius-btn); background: linear-gradient(180deg,var(--g-g24-op1),var(--g-g24-op2)); box-shadow: inset 0 1px 0 rgba(255,255,255,.65), 0 2px 6px rgba(20,40,30,.12); color: var(--g-on-soft); font-family: inherit; font-size: 22px; font-weight: 600; cursor: pointer; transition: transform .14s ease-out, box-shadow .16s ease-out, opacity .16s ease-out; }
+  .op:disabled { opacity: .3; box-shadow: none; }
+  .op:active { transform: scale(.96); }
+  .tools { display: flex; gap: 8px; animation: rise .32s ease-out both; animation-delay: 260ms; }
+  .swi { display: inline-block; vertical-align: -0.14em; flex: none; }
+  .btn { min-height: 44px; padding: 0 14px; flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 0; border-radius: var(--g-radius-btn); background: linear-gradient(180deg,var(--g-btn-primary),var(--g-primary-deep)); box-shadow: inset 0 1px 0 rgba(255,255,255,.28), 0 2px 8px rgba(20,40,30,.20); color: #fff; font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer; transition: transform .14s ease-out, box-shadow .16s ease-out, opacity .16s ease-out; }
+  .btn:active { transform: scale(.96); }
+  .btn.ghost { background: linear-gradient(180deg,var(--g-surface),var(--g-surface2)); box-shadow: inset 0 1px 0 rgba(255,255,255,.7), 0 1px 4px rgba(20,40,30,.10); color: var(--g-text); }
+  .btn:disabled { opacity: .3; box-shadow: none; }
   .btn.daily { margin-top: 8px; }
-  .btn.daily.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
+  .btn.daily.done { background: var(--g-primary-soft); color: var(--g-on-soft); box-shadow: inset 0 1px 0 rgba(255,255,255,.6); }
   .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
   .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
   .overlay { position: fixed; inset: 0; z-index: 10; background: var(--g-scrim); display: none; align-items: center; justify-content: center; padding: 20px; }
   .overlay.show { display: flex; }
   .panel { width: 100%; max-width: 320px; padding: 22px 18px; background: var(--g-surface); border-radius: var(--g-radius); box-shadow: var(--g-shadow); text-align: center; animation: pop .25s ease-out; }
-  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  @keyframes pop { 0% { transform: scale(.9); opacity: 0; } 60% { transform: scale(1.03); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
   .panel h2 { margin: 0 0 6px; font-size: 18px; }
   .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
   .panel .desc b { color: var(--g-primary-deep); font-size: 22px; }
@@ -64,7 +73,7 @@
   @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
 
   /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; animation-delay:0ms !important; transition-duration:.01ms !important} }
 
   /* P2: 键盘焦点可见（S5） */
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
@@ -81,7 +90,8 @@ window.SW_ICON=function(n,s){s=s||"";var P={
  'circle':'<circle cx="12" cy="12" r="5.5"/>','circle-f':'<circle cx="12" cy="12" r="5.5"/>',
  'tri-up':'<path d="M12 5l8 15H4z"/>','tri-down':'<path d="M12 19l-8-15h16z"/>','tri-left':'<path d="M5 12l15-8v16z"/>','tri-right':'<path d="M19 12L4 4v16z"/>',
  'backspace':'<path d="M9 5h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-6-7z M12.5 9.5l5 5M17.5 9.5l-5 5"/>',
- 'swap-h':'<path d="M7 4L3 8l4 4M3 8h14M17 12l4 4-4 4M21 16H7"/>'
+ 'swap-h':'<path d="M7 4L3 8l4 4M3 8h14M17 12l4 4-4 4M21 16H7"/>',
+ 'trash':'<path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13M10 11v6M14 11v6"/>'
 };
 var fill={ 'star':1,'circle-f':1,'tri-up':1,'tri-down':1,'tri-left':1,'tri-right':1 };
 return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
@@ -119,7 +129,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
     <button class="op" type="button" data-kind="lp">(</button>
     <button class="op" type="button" data-kind="rp">)</button>
     <button class="op" type="button" data-kind="back"><svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="" aria-hidden="true"><path d="M9 5h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-6-7z M12.5 9.5l5 5M17.5 9.5l-5 5"/></svg></button>
-    <button class="op" type="button" data-kind="clear">清空</button>
+    <button class="op" type="button" id="btnClear" data-kind="clear">清空</button>
   </div>
   <div class="tools">
     <button class="btn ghost" type="button" id="btnRetry">重玩本关</button>
@@ -273,7 +283,7 @@ function pruneDaily(){
 }
 function updateDailyBtn(){
   var b=document.getElementById("btnDaily"),t=dailyDateStr(),d=saveData.daily[t];
-  b.innerHTML="每日挑战 · "+t.slice(4,6)+"月"+t.slice(6,8)+"日"+(d&&d.done?" "+SW_ICON('check'):"");
+  b.innerHTML=SW_ICON('star')+"每日挑战 · "+t.slice(4,6)+"月"+t.slice(6,8)+"日"+(d&&d.done?" "+SW_ICON('check'):"");
   b.classList.toggle("done",!!(d&&d.done));
 }
 function save(){
@@ -603,7 +613,7 @@ function fail(reason){
   clearInterval(timer);timer=null;
   $("ovTitle").textContent="挑战失败";
   $("ovDesc").innerHTML=reason+"<br>本关："+numbers.join("，")+" "+SW_ICON('arrow-right')+" "+target;
-  $("ovBtn").textContent="重新挑战";
+  setOvBtn("重新挑战","rotate");
   showOverlay();
 }
 function success(usedSec){
@@ -618,7 +628,7 @@ function success(usedSec){
     $("stBest").textContent=usedSec+"s";
     $("ovTitle").innerHTML="每日挑战完成 "+SW_ICON('check');
     $("ovDesc").innerHTML="用时 <b>"+usedSec+"</b> 秒<br>"+numbers.join("，")+" "+SW_ICON('arrow-right')+" "+target;
-    $("ovBtn").textContent="再玩一次";
+    setOvBtn("再玩一次","rotate");
     showOverlay();
     return;
   }
@@ -632,9 +642,10 @@ function success(usedSec){
   $("stBest").textContent=saveData.best[cur]+"s";
   $("ovTitle").textContent=(lastResult==="win")?"全部通关！":"过关！";
   $("ovDesc").innerHTML="用时 <b>"+usedSec+"</b> 秒"+(isNew?" · 新纪录":"")+"<br>已过 "+cleared+" / "+LEVELS.length+" 关";
-  $("ovBtn").textContent=(lastResult==="win")?"从第一关再来":"下一关";
+  setOvBtn((lastResult==="win")?"从第一关再来":"下一关",(lastResult==="win")?"rotate":"arrow-right");
   showOverlay();
 }
+function setOvBtn(t,icon){$("ovBtn").innerHTML=SW_ICON(icon)+t;}
 function showOverlay(){$("overlay").classList.add("show");}
 function hideOverlay(){$("overlay").classList.remove("show");}
 function onVis(){
@@ -708,6 +719,16 @@ syncSaveFromServer();
     el.addEventListener("keydown",function(e){trap(el,e)});
   }
   for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+<script>
+/* 按钮图标注入（内联 SVG，零外链）：文字前带图标；覆盖层按钮文案一律走 setOvBtn，避免抹掉图标 */
+(function(){
+  function $(id){return document.getElementById(id)}
+  $("btnRetry").insertAdjacentHTML("afterbegin",window.SW_ICON("rotate"));
+  $("btnSubmit").insertAdjacentHTML("afterbegin",window.SW_ICON("check"));
+  $("btnClear").insertAdjacentHTML("afterbegin",window.SW_ICON("trash"));
+  $("ovBtn").innerHTML=window.SW_ICON("arrow-right")+"下一关";
 })();
 </script>
 </body>

@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#F5F6F3">
 <title>病句门诊</title>
 <style>
-  /*token:GAME-THEME.md §2（全部 UI 壳走 token）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light }
-  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
+  /*token:GAME-THEME.md §2 基线 + §3 素材 token（--g-sf-*：病历纸面 / 朱砂批改 / 诊断蓝）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-on-primary:#FFFFFF;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-sf-paper1:#FBF6E9;--g-sf-paper2:#F0E2C6;--g-sf-seal:#B4453C;--g-sf-acc:#1A6196;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-sf-paper1:#2B221A;--g-sf-paper2:#1A140E;--g-sf-seal:#E08A80;--g-sf-acc:#6BB4DE;color-scheme:dark }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
   html, body { margin: 0; padding: 0; }
@@ -22,73 +22,127 @@
     touch-action: manipulation; overscroll-behavior: none;
   }
   .wrap { width: 100%; max-width: 480px; }
-  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
-  .sub { font-size: 14px; color: var(--g-muted); }
-  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; min-width: 0; }
+  .swi { display: inline-block; vertical-align: -0.14em; flex: none; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; padding: 0 2px; }
+  .sub { font-size: 14px; color: var(--g-muted); line-height: 1.4; text-align: right; }
+  /* 页头关卡标签：soft 底 + deep 字 + 诊断蓝描边图标丸 */
+  .lvtag { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px 4px 5px; border-radius: 10px; background: var(--g-primary-soft); color: var(--g-primary-deep); font-size: 14px; font-weight: 600; line-height: 1.4; box-shadow: inset 0 1px 0 rgba(255,255,255,.55), var(--g-shadow); animation: rise .3s ease-out both; }
+  .lvtag-ico { width: 18px; height: 18px; border-radius: 6px; border: 1.5px solid var(--g-sf-acc); color: var(--g-sf-acc); display: inline-flex; align-items: center; justify-content: center; flex: none; }
+  .lvtag-ico .swi { width: 12px; height: 12px; }
+  /* 记分块：面渐变 + 顶光 + 投影 + 顶部彩条；入场错落 40/80/120ms */
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
+  .stat { position: relative; overflow: hidden; min-width: 0; padding: 8px 4px 7px; text-align: center; line-height: 1.3; background: linear-gradient(180deg, var(--g-surface), var(--g-surface2)); border-radius: var(--g-radius-inner); box-shadow: inset 0 1px 0 rgba(255,255,255,.55), var(--g-shadow); animation: rise .3s ease-out both; }
+  .stat::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--g-sf-acc); }
+  .stat:nth-child(1) { animation-delay: 40ms; }
+  .stat:nth-child(2) { animation-delay: 80ms; }
+  .stat:nth-child(3) { animation-delay: 120ms; }
+  .stat:nth-child(2)::before { background: var(--g-primary-deep); }
+  .stat:nth-child(3)::before { background: var(--g-sf-seal); }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
-  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
   .stat .val.bad { color: var(--g-danger); }
-  .stem {
-    background: var(--g-surface); border-radius: var(--g-radius-inner);
-    padding: 14px 14px; margin-bottom: 10px; box-shadow: var(--g-shadow);
-  }
-  .stem .tag { display: block; font-size: 12px; color: var(--g-muted); margin-bottom: 6px; }
-  .stem .line { font-size: 16px; font-weight: 700; line-height: 1.8; }
-  .stem .cause { display: block; font-size: 12px; color: var(--g-warning); margin-top: 8px; }
-  .opts { display: grid; gap: 8px; }
-  .opt {
-    min-height: 48px; padding: 10px 12px; border: 0; border-radius: var(--g-radius-btn);
-    background: var(--g-surface); color: var(--g-text);
-    font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
-    box-shadow: 0 1px 0 var(--g-border); line-height: 1.5; text-align: center;
-  }
-  .opt:active { opacity: .8; }
-  .opt.right { background: var(--g-primary-soft); color: var(--g-on-soft); box-shadow: inset 0 0 0 2px var(--g-success); }
-  .opt.wrong { background: var(--g-surface2); color: var(--g-danger); box-shadow: inset 0 0 0 2px var(--g-danger); text-decoration: line-through; }
+  .stat .val.bump { animation: bump .2s ease-out; }
+  /* 进度条：内凹轨道 + 诊断蓝填充，宽度 180ms ease-out */
+  .bar { height: 8px; margin: 0 2px 10px; border-radius: 10px; background: var(--g-surface2); box-shadow: inset 0 1px 2px rgba(20,40,30,.14); overflow: hidden; }
+  .bar > i { display: block; height: 100%; width: 0; border-radius: 10px; background: linear-gradient(90deg, var(--g-sf-acc), var(--g-primary)); transition: width .18s ease-out; }
+  /* 分区标签：题目 / 候选改法 / 反馈分区明确 */
+  .sec { display: flex; align-items: center; gap: 6px; margin: 0 2px 6px; font-size: 12px; font-weight: 600; letter-spacing: .5px; color: var(--g-muted); }
+  .sec::before { content: ""; width: 4px; height: 14px; border-radius: 2px; background: linear-gradient(180deg, var(--g-sf-acc), var(--g-primary-deep)); }
+  /* 题目卡：病历纸面渐变 + 顶光 + 投影 + 朱砂装订线 */
+  .stem { position: relative; margin-bottom: 10px; padding: 16px 16px 16px 20px; text-align: center; border-radius: var(--g-radius); background: linear-gradient(180deg, var(--g-sf-paper1), var(--g-sf-paper2)); box-shadow: inset 0 1px 0 rgba(255,255,255,.5), var(--g-shadow); animation: rise .3s ease-out both; animation-delay: 140ms; }
+  .stem::before { content: ""; position: absolute; left: 0; top: 12px; bottom: 12px; width: 4px; border-radius: 0 4px 4px 0; background: var(--g-sf-seal); }
+  .stem-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .stem-tag { flex: none; padding: 3px 10px; border-radius: 10px; background: var(--g-surface2); color: var(--g-sf-seal); font-size: 12px; font-weight: 700; letter-spacing: .5px; box-shadow: inset 0 1px 0 rgba(255,255,255,.5); }
+  .stem-q { margin-left: auto; font-size: 12px; color: var(--g-muted); }
+  .stem .line { position: relative; display: inline-block; max-width: 100%; padding: 0 4px 8px; font-size: 22px; font-weight: 700; line-height: 1.9; text-align: left; }
+  .stem .line::after { content: ""; position: absolute; left: 6px; right: 6px; bottom: 0; height: 4px; border-radius: 2px; background: linear-gradient(90deg, var(--g-sf-acc), transparent); opacity: .5; }
+  /* 病因批注：朱砂描边 + 图标，答对后公布 */
+  .cause { display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; padding: 5px 12px; border-radius: 10px; background: var(--g-surface2); color: var(--g-text); font-size: 14px; font-weight: 600; box-shadow: inset 0 0 0 1px var(--g-sf-seal); animation: pop .2s ease-out; }
+  .cause .swi { width: 16px; height: 16px; color: var(--g-sf-seal); }
+  /* 选项字卡：面渐变 + 顶光 + 投影 + 键位描边徽；入场按项错位 40ms */
+  .opts { display: grid; gap: 8px; margin-bottom: 4px; }
+  .opt { position: relative; min-height: 52px; padding: 10px 12px; border: 1px solid var(--g-border); border-radius: var(--g-radius-btn); background: linear-gradient(180deg, var(--g-surface), var(--g-surface2)); color: var(--g-text); font-family: inherit; font-size: 18px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 10px; text-align: left; line-height: 1.5; box-shadow: inset 0 1px 0 rgba(255,255,255,.55), var(--g-shadow); transition: transform .14s ease-out, background .16s ease-out, box-shadow .16s ease-out, color .16s ease-out, border-color .16s ease-out; animation: rise .3s ease-out both; }
+  .opt:active { transform: scale(.96); }
+  .opt .kb { flex: none; width: 26px; height: 26px; border-radius: 8px; border: 1.5px solid var(--g-sf-acc); background: var(--g-surface); color: var(--g-sf-acc); font-size: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .opt .w { flex: 1; min-width: 0; }
+  .opt .mark { flex: none; width: 22px; height: 22px; display: none; }
+  .opt .mark svg { width: 100%; height: 100%; display: block; }
+  .opt.right { background: linear-gradient(180deg, var(--g-primary-soft), var(--g-primary-soft)); color: var(--g-on-soft); border-color: transparent; box-shadow: inset 0 0 0 2px var(--g-success), 0 2px 8px rgba(20,40,30,.10); animation: bump .22s ease-out; }
+  .opt.right .mark { display: block; color: var(--g-success); }
+  .opt.right .kb { border-color: var(--g-success); color: var(--g-success); }
+  .opt.wrong { background: linear-gradient(180deg, var(--g-surface2), var(--g-surface2)); color: var(--g-danger); border-color: var(--g-danger); box-shadow: inset 0 0 0 1px var(--g-danger); animation: shake .18s ease-out; }
+  .opt.wrong .w { text-decoration: line-through; }
+  .opt.wrong .mark { display: block; color: var(--g-danger); }
+  .opt.wrong .kb { border-color: var(--g-danger); color: var(--g-danger); }
   .opt:disabled { cursor: default; }
-  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
-  .tools { display: flex; gap: 8px; }
-  .btn {
-    min-height: 44px; padding: 0 14px; flex: 1;
-    border: 0; border-radius: var(--g-radius-btn);
-    background: var(--g-surface2); color: var(--g-text);
-    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
-  }
-  .btn:active { opacity: .85; }
+  .opt:disabled:not(.right):not(.wrong) { opacity: .55; }
+  /* 反馈区：图标 + 文案，状态色随对错切换 */
+  .msg { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; animation: fadein .3s ease-out both; animation-delay: 200ms; }
+  .msg.good { color: var(--g-success); font-weight: 600; }
+  .msg.bad { color: var(--g-danger); font-weight: 600; }
+  .msg-ico { flex: none; width: 16px; height: 16px; display: inline-flex; }
+  .msg-ico svg { width: 100%; height: 100%; display: block; }
+  /* 工具钮：次级面渐变 + 顶光 + 投影 + 图标 */
+  .tools { display: flex; gap: 8px; margin-bottom: 8px; animation: rise .3s ease-out both; animation-delay: 220ms; }
+  .btn { min-height: 44px; padding: 0 12px; flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 0; border-radius: var(--g-radius-btn); background: linear-gradient(180deg, var(--g-surface), var(--g-surface2)); color: var(--g-text); font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer; box-shadow: inset 0 1px 0 rgba(255,255,255,.55), var(--g-shadow); transition: transform .14s ease-out, opacity .16s ease-out, background .16s ease-out; }
+  .btn .swi { width: 18px; height: 18px; flex: none; }
+  .btn:active { transform: scale(.96); }
   .btn:disabled { opacity: .35; }
-  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
+  .btn.primary { background: var(--g-btn-primary); color: var(--g-on-primary); box-shadow: inset 0 1px 0 rgba(255,255,255,.35), inset 0 -2px 0 rgba(0,0,0,.18), 0 2px 8px rgba(20,40,30,.12); }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; animation: fadein .3s ease-out both; animation-delay: 240ms; }
   .overlay {
     position: fixed; inset: 0; z-index: 10;
     background: var(--g-scrim);
     display: none; align-items: center; justify-content: center; padding: 20px;
+    overflow-y: auto;
   }
   .overlay.show { display: flex; animation: fadein .2s ease-out; }
-  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
   .panel {
     width: 100%; max-width: 340px; padding: 22px 18px;
-    background: var(--g-surface); border-radius: var(--g-radius);
-    box-shadow: var(--g-shadow); text-align: center;
+    background: linear-gradient(180deg, var(--g-surface), var(--g-surface2));
+    border-radius: var(--g-radius);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.55), 0 10px 24px rgba(20,40,30,.18);
+    text-align: center;
     animation: pop .25s ease-out;
   }
-  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .ov-ico { width: 52px; height: 52px; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; border-radius: 14px; background: var(--g-primary-soft); color: var(--g-on-soft); box-shadow: inset 0 1px 0 rgba(255,255,255,.5), var(--g-shadow); }
+  .ov-ico .swi { width: 26px; height: 26px; }
   .panel h2 { margin: 0 0 6px; font-size: 18px; }
-  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.7; }
+  .panel .desc b { color: var(--g-primary-deep); font-size: 22px; }
   .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; max-height: 300px; overflow-y: auto; }
-  .lvbtn {
-    min-height: 44px; border: 0; border-radius: var(--g-radius-inner);
-    background: var(--g-surface2); color: var(--g-text);
-    font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer;
-  }
+  .lvbtn { min-height: 44px; border: 0; border-radius: var(--g-radius-inner); background: linear-gradient(180deg, var(--g-surface), var(--g-surface2)); color: var(--g-text); box-shadow: inset 0 1px 0 rgba(255,255,255,.55), var(--g-shadow); font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer; transition: transform .14s ease-out, background .16s ease-out; }
+  .lvbtn:active { transform: scale(.96); }
   .lvbtn[disabled] { opacity: .35; }
-  .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
+  .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); box-shadow: inset 0 0 0 1px var(--g-primary-deep); }
   .panel .btn { width: 100%; margin-bottom: 8px; }
   .panel .btn:last-child { margin-bottom: 0; }
-  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（注意：动效层指令，不受 §4 主题层禁令约束） */
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes pop { 0% { transform: scale(.9); opacity: 0; } 60% { transform: scale(1.03); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+  @keyframes bump { 0% { transform: scale(1); } 40% { transform: scale(1.12); } 100% { transform: scale(1); } }
+  @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+  /* S2: 动效敏感用户降级——保留状态切换，同时压平 animation-duration 与 animation-delay（动效层指令，不受 §4 主题层禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; animation-delay:0ms !important; transition-duration:.01ms !important} }
   /* P2: 键盘焦点可见 */
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 </style>
+<script>
+/* 内联图标库：照抄本库 window.SW_ICON 结构（24 viewBox / currentColor / aria-hidden / 零外链） */
+window.SW_ICON=function(n,s){s=s||"";var P={
+ 'pulse':'<path d="M3 12h4l2.5-7 4 14 2.5-7H21"/>',
+ 'bulb':'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.8.8 1 1.6 1 2.5h6c0-.9.2-1.7 1-2.5A6 6 0 0 0 12 3z"/>',
+ 'rotate':'<path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/>',
+ 'grid':'<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>',
+ 'play':'<path d="M8 5v14l11-7z"/>',
+ 'check':'<path d="M4 12.5l5 5L20 6.5"/>',
+ 'x':'<path d="M6 6l12 12M18 6L6 18"/>',
+ 'target':'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/>'
+};
+var fill={ 'play':1,'check':1 };
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
+};
+</script>
 <script>
 //主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
 (function(){
@@ -104,19 +158,24 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
 </head>
 <body>
 <div class="wrap">
-  <header><span class="sub" id="lvTag">第 1 关</span><span class="sub" id="lvRule"></span></header>
+  <header>
+    <span class="lvtag" id="lvTag"><span class="lvtag-ico" id="lvTagIco"></span><span id="lvTagText">第 1 关</span></span>
+    <span class="sub" id="lvRule"></span>
+  </header>
   <div class="stats">
     <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/40</span></div>
     <div class="stat"><span class="label">进度</span><span class="val" id="stQ">1/3</span></div>
     <div class="stat"><span class="label">失误</span><span class="val" id="stErr">0</span></div>
   </div>
-  <div class="stem">
-    <span class="tag" id="qTag">病句 · 第 1 / 3 题</span>
+  <div class="bar" aria-hidden="true"><i id="barFill"></i></div>
+  <section class="stem" id="stem">
+    <div class="stem-head"><span class="stem-tag">病句</span><span class="stem-q" id="qTag">第 1 / 3 题</span></div>
     <div class="line" id="qLine"></div>
-    <span class="cause" id="qCause" hidden></span>
-  </div>
+    <span class="cause" id="qCause" hidden><span class="swi" id="causeIco"></span><span id="causeText"></span></span>
+  </section>
+  <p class="sec" id="secOpts">候选改法 · 点选一句</p>
   <div class="opts" id="opts"></div>
-  <p class="msg" id="msg" role="status" aria-live="polite">选出把病句改对的那一句</p>
+  <p class="msg" id="msg" role="status" aria-live="polite"><span class="msg-ico" id="msgIco" aria-hidden="true"></span><span id="msgText">选出把病句改对的那一句</span></p>
   <div class="tools">
     <button class="btn" id="btnReset">重开</button>
     <button class="btn" id="btnLv">选关</button>
@@ -125,6 +184,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
 </div>
 <div class="overlay" role="dialog" aria-modal="true" id="overlay">
   <div class="panel">
+    <div class="ov-ico" id="ovIco"></div>
     <h2 id="ovTitle">过关！</h2>
     <p class="desc" id="ovDesc"></p>
     <div class="lvgrid" id="lvgrid" hidden></div>
@@ -418,13 +478,21 @@ function syncSaveFromServer(){
 /* ---------- 状态 ---------- */
 var lv=save.lv,L=null,qi=0,errors=0,done=false,gen=0;
 function $(id){return document.getElementById(id)}
-function say(t){$("msg").textContent=t}
+/* 反馈文案 + 图标 + 状态色（图标独立节点，文案更新不抹掉图标） */
+function say(t,kind){
+  $("msgText").textContent=t;
+  $("msg").className="msg"+(kind?" "+kind:"");
+  var ico=$("msgIco");
+  if(ico)ico.innerHTML=window.SW_ICON(kind==="good"?"check":kind==="bad"?"x":"target");
+}
+/* 覆盖层主按钮：图标 + 文案同节点重建（不用 textContent 覆盖，避免抹掉图标） */
+function setOvBtn(text,icon){$("ovBtn").innerHTML=window.SW_ICON(icon,"width:18px;height:18px;flex:none")+text}
 function loadLevel(n){
   lv=Math.max(0,Math.min(n,LEVELS.length-1));
   L=LEVELS[lv];
   if(!validLevelData(L)){say("关卡数据异常");return;}
   qi=0;errors=0;done=false;gen++;
-  $("lvTag").textContent="第 "+(lv+1)+" 关 · "+L.name;
+  $("lvTagText").textContent="第 "+(lv+1)+" 关 · "+L.name;
   $("lvRule").textContent="三题全答完过关";
   $("stLv").textContent=(lv+1)+"/"+LEVELS.length;
   renderQ();updStats();
@@ -432,54 +500,65 @@ function loadLevel(n){
 }
 function renderQ(){
   var q=L.qs[qi];
-  $("qTag").textContent="病句 · 第 "+(qi+1)+" / "+L.qs.length+" 题";
+  $("qTag").textContent="第 "+(qi+1)+" / "+L.qs.length+" 题";
   $("qLine").textContent=q.s;
   $("qCause").hidden=true;
   var box=$("opts");box.innerHTML="";
   for(var i=0;i<q.opts.length;i++){
     (function(i){
       var b=document.createElement("button");
-      b.className="opt";b.textContent=q.opts[i];
+      b.className="opt";
+      var k=document.createElement("span");k.className="kb";k.textContent=i+1;
+      var w=document.createElement("span");w.className="w";w.textContent=q.opts[i];
+      var m=document.createElement("span");m.className="mark";
+      b.appendChild(k);b.appendChild(w);b.appendChild(m);
       b.setAttribute("aria-label","改正候选 "+(i+1));
+      b.style.animationDelay=(i*40)+"ms";
       b.addEventListener("click",function(){answer(i)});
       box.appendChild(b);
     })(i);
   }
 }
 function updStats(){
-  $("stQ").textContent=(qi+1)+"/"+L.qs.length;
+  var q=$("stQ"),t=(qi+1)+"/"+L.qs.length;
+  if(q.textContent!==t){q.textContent=t;q.classList.remove("bump");void q.offsetWidth;q.classList.add("bump")}
   var e=$("stErr");e.textContent=errors;
   e.className="val"+(errors>0?" bad":"");
+  var bf=$("barFill");if(bf)bf.style.width=Math.round(qi/Math.max(1,L.qs.length)*100)+"%";
 }
 function answer(i){
   if(done)return;
   var q=L.qs[qi],btn=$("opts").children[i];
   if(i===q.ok){
-    btn.classList.add("right");
+    btn.classList.add("right");btn.style.animationDelay="0ms";
+    var m1=btn.querySelector(".mark");if(m1)m1.innerHTML=window.SW_ICON("check","width:18px;height:18px");
     $("opts").querySelectorAll(".opt").forEach(function(b){b.disabled=true});
     $("qCause").hidden=false;
-    $("qCause").textContent="病因：" + q.cause;
-    say("改对了，病因是「"+q.cause+"」");
+    $("causeText").textContent="病因：" + q.cause;
+    say("改对了，病因是「"+q.cause+"」","good");
     var g=gen;
     setTimeout(function(){
       if(g!==gen)return;
       qi++;
       if(qi>=L.qs.length)winLevel();
-      else{renderQ();updStats();say("选出把病句改对的那一句");}
+      else{renderQ();updStats();say("选出把病句改对的那一句")}
     },900);
   }else{
     errors++;updStats();
-    btn.classList.add("wrong");btn.disabled=true;
-    say("这样改还没改对，看看是不是没找到病根");
+    btn.classList.add("wrong");btn.disabled=true;btn.style.animationDelay="0ms";
+    var m2=btn.querySelector(".mark");if(m2)m2.innerHTML=window.SW_ICON("x","width:18px;height:18px");
+    say("这样改还没对，看看是不是没找到病根","bad");
   }
 }
 function winLevel(){
   done=true;
   if(lv<LEVELS.length-1){save.lv=Math.max(save.lv,lv+1);persist();}
   if(GB.available)GB.reportScore(GAME_KEY,{metricValue:lv+1,metricExtra:errors}).catch(function(){});
-  $("ovTitle").textContent=(lv>=LEVELS.length-1)?"全部通关！":"门诊结束！";
+  var last=lv>=LEVELS.length-1;
+  $("ovTitle").textContent=last?"全部通关！":"门诊结束！";
   $("ovDesc").innerHTML="失误 "+errors+" 次"+(errors===0?"（妙手回春）":"")+(lv<LEVELS.length-1?"<br>已解锁第 "+(lv+2)+" 关":"<br>40 关全部完成");
-  $("ovBtn").textContent=(lv>=LEVELS.length-1)?"回到第 1 关":"下一关";
+  setOvBtn(last?"回到第 1 关":"下一关",last?"rotate":"play");
+  var oi=$("ovIco");if(oi)oi.innerHTML=window.SW_ICON("check","width:26px;height:26px");
   $("overlay").classList.add("show");
 }
 function openLevelSelect(){
@@ -500,7 +579,8 @@ function openLevelSelect(){
   }
   $("ovTitle").textContent="选择关卡";
   $("ovDesc").textContent="已通关的关卡会标绿";
-  $("ovBtn").textContent="取消";
+  setOvBtn("取消","x");
+  var oi=$("ovIco");if(oi)oi.innerHTML=window.SW_ICON("grid","width:26px;height:26px");
   $("overlay").classList.add("show");
 }
 $("btnReset").addEventListener("click",function(){loadLevel(lv);say("本关已重开")});
@@ -522,8 +602,10 @@ window.addEventListener("keydown",function(e){
 });
 /* ---------- 启动 ---------- */
 loadLevel(save.lv);
+setOvBtn("下一关","play");
 var badLv=auditAll();
-if(badLv.length)say("警告：内嵌验证器发现异常关卡 "+badLv.join(","));
+/* 内嵌验证器属开发期自检：异常只走 console，不往玩家界面写「校验 n/n」类 HUD */
+if(badLv.length)console.warn("[sentence-fix] 内嵌验证器发现异常关卡 "+badLv.join(","));
 syncLevelsFromServer();syncSaveFromServer();
 })();
 </script>
@@ -531,6 +613,12 @@ syncLevelsFromServer();syncSaveFromServer();
 /* 覆盖层焦点管理（dialog 语义配套）：显示时记录触发元素并聚焦首个可操作项；Tab 在层内循环；隐藏后归还焦点 */
 (function(){
   var els=document.querySelectorAll(".overlay, .sheet");
+  /* 按钮图标注入（内联 SVG，零外链；工具钮 / 页头标签 / 病因批注） */
+  function $(id){return document.getElementById(id)}
+  var li=$("lvTagIco");if(li)li.innerHTML=window.SW_ICON("pulse","width:12px;height:12px");
+  var ci=$("causeIco");if(ci)ci.innerHTML=window.SW_ICON("bulb","width:16px;height:16px");
+  var br=$("btnReset");if(br)br.insertAdjacentHTML("afterbegin",window.SW_ICON("rotate","width:18px;height:18px;flex:none"));
+  var bl=$("btnLv");if(bl)bl.insertAdjacentHTML("afterbegin",window.SW_ICON("grid","width:18px;height:18px;flex:none"));
   if(!els.length)return;
   function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
   var lastFocus=null;

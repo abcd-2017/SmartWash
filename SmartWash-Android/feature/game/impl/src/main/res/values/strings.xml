@@ -4,6 +4,13 @@
     <!-- ==================== 页面标题 ==================== -->
     <string name="game_center_title">游戏中心</string>
 
+    <!-- ==================== 搜索 ==================== -->
+    <string name="game_search_hint">搜索游戏</string>
+    <!-- 搜索无结果空态（与全量空态 / 分类无命中区分，附「清除搜索」行动入口） -->
+    <string name="game_search_empty">没有找到相关游戏，换个关键词试试</string>
+    <!-- 搜索框尾缀清空按钮的读屏文案 -->
+    <string name="game_search_clear">清除搜索</string>
+
     <!-- ==================== 分类筛选 chips ==================== -->
     <string name="game_category_all">全部</string>
     <string name="game_category_puzzle">益智</string>

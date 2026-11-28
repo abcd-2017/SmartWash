@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#F5F6F3">
 <title>2048</title>
 <style>
-  /*token:GAME-THEME.md*/
-  :root { --g-bg:#F5F6F3;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-primary:#2D9B6A;--g-on-primary:#FFF;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-scrim:rgba(245,246,243,.9);--g-board:#BBADA0;--g-cell:#EEE4DA59;--g-tilesuper:#3C3A32;color-scheme:light }
-  :root[data-theme=dark] { --g-bg:#141614;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-primary-deep:#5BC894;--g-scrim:rgba(20,22,20,.9);--g-board:#433A32;--g-cell:#FFFFFF12;--g-tilesuper:#6B6E73;color-scheme:dark }
+  /*token:GAME-THEME.md §2 基线 + §3 素材 token（台面 / 格槽 / 目标金）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-btn-primary:#17734A;--g-on-primary:#FFFFFF;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-g2048-board1:#1E6B4A;--g-g2048-board2:#123A2C;--g-g2048-cell:#0D2A1F;--g-g2048-gold:#E8B45C;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-g2048-board1:#123A2C;--g-g2048-board2:#0B241A;--g-g2048-cell:#08170F;--g-g2048-gold:#E2A44E;color-scheme:dark }
   :root { --gap: clamp(6px, 2.2vw, 10px); }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
@@ -29,26 +29,44 @@
     overscroll-behavior: none;
   }
   .wrap { width: 100%; max-width: 480px; }
-  header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 16px; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
   .scores { display: flex; gap: 8px; }
   .score-box {
-    background: var(--g-btn-primary); color: var(--g-on-primary); border-radius: 12px;
-    min-width: 78px; padding: 5px 12px; text-align: center; line-height: 1.3;
+    background: var(--g-surface); border: 1px solid var(--g-border);
+    border-radius: var(--g-radius-inner);
+    min-width: 78px; padding: 6px 12px; text-align: center; line-height: 1.3;
+    box-shadow: var(--g-shadow);
   }
-  .score-box .label { display: block; font-size: 12px; opacity: .85; }
-  .score-box .val { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .score-box .label { display: block; font-size: 12px; color: var(--g-muted); }
+  .score-box .val { display: block; font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .score-box .val.bump { animation: bump .18s ease-out; }
+  /* 目标 chip：金丸 = 2048 目标色，三秒读懂「目标是什么」 */
+  .target-chip {
+    display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px;
+    border-radius: 10px; background: var(--g-primary-soft); color: var(--g-on-soft);
+    font-size: 14px; font-weight: 600; white-space: nowrap; flex: none;
+  }
+  .target-chip .dot {
+    width: 10px; height: 10px; border-radius: 50%; flex: none;
+    background: var(--g-g2048-gold);
+    box-shadow: 0 0 0 2px rgba(255,255,255,.55), 0 1px 3px rgba(0,0,0,.28);
+  }
   .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
-  .hint { margin: 0; font-size: 14px; color: var(--g-muted); }
+  .hint { margin: 0; font-size: 14px; color: var(--g-muted); line-height: 1.5; }
   .btn {
-    min-height: 44px; padding: 0 18px;
-    border: 0; border-radius: 10px;
+    min-height: 44px; padding: 0 16px; flex: none;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    border: 0; border-radius: var(--g-radius-btn);
     background: var(--g-btn-primary); color: var(--g-on-primary);
     font-size: 16px; font-weight: 600; font-family: inherit;
-    cursor: pointer;
+    cursor: pointer; box-shadow: var(--g-shadow);
+    transition: transform .14s ease-out, box-shadow .16s ease-out, background .16s ease-out;
   }
-  .btn:active { opacity: .85; }
+  .btn:active { transform: scale(.96); }
   .btn.ghost { background: transparent; color: var(--g-primary-deep); box-shadow: inset 0 0 0 2px var(--g-primary-deep); }
+  .swi { display: inline-block; vertical-align: -0.14em; flex: none; }
   .board-wrap { position: relative; }
+  /* 台面（地面 / 边界）：品牌绿「面」渐变 + 顶缘高光 + 内凹底缘 + 卡片投影 */
   .grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -57,48 +75,86 @@
     padding: var(--gap);
     width: 100%;
     aspect-ratio: 1;
-    background: var(--g-board);
-    border-radius: 12px;
+    background: linear-gradient(155deg, var(--g-g2048-board1), var(--g-g2048-board2));
+    border-radius: var(--g-radius);
+    box-shadow: inset 0 2px 0 rgba(255,255,255,.14), inset 0 -4px 0 rgba(0,0,0,.26), var(--g-shadow);
     touch-action: none;
   }
+  /* 滑动方向反馈：台面整体轻移（transform，轨迹层） */
+  .grid.nudge-l { animation: nudgeL .16s ease-out; }
+  .grid.nudge-r { animation: nudgeR .16s ease-out; }
+  .grid.nudge-u { animation: nudgeU .16s ease-out; }
+  .grid.nudge-d { animation: nudgeD .16s ease-out; }
+  @keyframes nudgeL { 35% { transform: translateX(-4px); } }
+  @keyframes nudgeR { 35% { transform: translateX(4px); } }
+  @keyframes nudgeU { 35% { transform: translateY(-4px); } }
+  @keyframes nudgeD { 35% { transform: translateY(4px); } }
+  /* 格槽（地面）：内凹底 + 顶影 + 底缘亮边 */
   .cell {
-    background: var(--g-cell);
-    border-radius: 12px;
+    position: relative;
+    background: var(--g-g2048-cell);
+    border-radius: var(--g-radius-inner);
     display: flex; align-items: center; justify-content: center;
-    overflow: hidden;
+    box-shadow: inset 0 2px 6px rgba(0,0,0,.32), inset 0 -1px 0 rgba(255,255,255,.06);
+    animation: cellIn .3s ease-out both;
+    animation-delay: calc(var(--i, 0) * 40ms);
   }
+  @keyframes cellIn {
+    from { opacity: 0; transform: translateY(6px) scale(.96); }
+    to { opacity: 1; transform: none; }
+  }
+  /* 方块（玩法素材）：顶光 sheen + 内凹底缘 + 落地投影 = 轻立体 */
   .tile {
+    position: relative;
     width: 100%; height: 100%;
-    border-radius: 12px;
+    border-radius: var(--g-radius-inner);
     display: flex; align-items: center; justify-content: center;
     font-weight: 700; font-variant-numeric: tabular-nums;
+    color: var(--tile-ink);
+    background-color: var(--tile-base);
+    background-image: linear-gradient(180deg, rgba(255,255,255,.34), rgba(255,255,255,.06) 46%, rgba(0,0,0,.10));
+    box-shadow: inset 0 2px 0 rgba(255,255,255,.42), inset 0 -3px 0 rgba(0,0,0,.20), 0 4px 10px rgba(0,0,0,.30);
+    text-shadow: 0 1px 1px rgba(0,0,0,.16);
   }
-  .f1 { font-size: clamp(24px, 8.5vw, 36px); }
-  .f2 { font-size: clamp(20px, 7vw, 30px); }
-  .f3 { font-size: clamp(15px, 5.4vw, 23px); }
-  .c2 { background: #eee4da; color: #776e65; }
-  .c4 { background: #ede0c8; color: #776e65; }
-  /* 素材色(D2 修订 2026-11-07)：c8–c64 暖段改深棕字（对比 ≥4.5）；
-     c128+ 由黄阶改蓝阶——蓝橙为色盲安全对、阶内亮度递减可区分，
-     修复绿色盲下 128–2048 ΔE≈0.8 不可分辨与白字 1.4~1.6 对比失效 */
-  .c8 { background: #f2b179; color: #5c3a1e; }
-  .c16 { background: #f59563; color: #4d2a0e; }
-  .c32 { background: #f67c5f; color: #4a1b0c; }
-  .c64 { background: #f65e3b; color: #330d06; }
-  .c128 { background: #3e7cb8; color: #f9f6f2; }
-  .c256 { background: #35699e; color: #f9f6f2; }
-  .c512 { background: #2c5685; color: #f9f6f2; }
-  .c1024 { background: #24446c; color: #f9f6f2; }
-  .c2048 { background: #1c3556; color: #f9f6f2; border: 2px solid rgba(76, 129, 184, .8); box-shadow: 0 2px 12px rgba(0, 0, 0, .28); }
-  .csuper { background: var(--g-tilesuper); color: #f9f6f2; }
+  .f1 { font-size: 36px; }
+  .f2 { font-size: 28px; }
+  .f3 { font-size: 22px; }
+  /* 方块素材色：2/4 米白、8–64 暖橙红、128–1024 蓝阶（蓝橙色盲安全、阶内亮度递减可区分）、
+     2048 目标金、super 深蓝；字色对各自底 ≥4.5:1，方块体统一走 .tile 的 sheen + 内凹 + 投影 */
+  .c2 { --tile-base: #EEE4DA; --tile-ink: #6B6156; }
+  .c4 { --tile-base: #E7D7B8; --tile-ink: #6B573A; }
+  .c8 { --tile-base: #F2B179; --tile-ink: #4A2A10; }
+  .c16 { --tile-base: #F59563; --tile-ink: #3F1F08; }
+  .c32 { --tile-base: #F67C5F; --tile-ink: #3A1208; }
+  .c64 { --tile-base: #F65E3B; --tile-ink: #2A0803; }
+  .c128 { --tile-base: #35709F; --tile-ink: #F4F8FC; }
+  .c256 { --tile-base: #2E6390; --tile-ink: #F4F8FC; }
+  .c512 { --tile-base: #27557F; --tile-ink: #F4F8FC; }
+  .c1024 { --tile-base: #1F466E; --tile-ink: #F4F8FC; }
+  /* 目标方块：金面 + 金环 + 金色外发光，棋盘上唯一持续强调的目标 */
+  .c2048 { --tile-base: var(--g-g2048-gold); --tile-ink: #3A2A08;
+    box-shadow: inset 0 2px 0 rgba(255,255,255,.62), inset 0 -3px 0 rgba(0,0,0,.18), 0 0 0 2px var(--g-g2048-gold), 0 0 18px var(--g-g2048-gold); }
+  .csuper { --tile-base: #1C3556; --tile-ink: #F4F8FC; }
+  /* 新块落下 pop / 合成 merge 轻弹，均 180ms ease-out */
   .pop { animation: pop .18s ease-out; }
   @keyframes pop {
-    from { transform: scale(.3); opacity: 0; }
+    from { transform: scale(.35); opacity: 0; }
     to { transform: scale(1); opacity: 1; }
+  }
+  .merge { animation: merge .18s ease-out; }
+  @keyframes merge {
+    0% { transform: scale(1); }
+    45% { transform: scale(1.16); }
+    100% { transform: scale(1); }
+  }
+  @keyframes bump {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.18); }
+    100% { transform: scale(1); }
   }
   .overlay {
     position: absolute; inset: 0;
-    border-radius: 12px;
+    border-radius: var(--g-radius);
     background: var(--g-scrim);
     display: none;
     flex-direction: column; align-items: center; justify-content: center;
@@ -109,10 +165,11 @@
   .ov-title { margin: 0; font-size: 18px; font-weight: 700; color: var(--g-primary-deep); }
   .ov-sub { margin: 0 0 12px; font-size: 14px; color: var(--g-muted); }
   .overlay .btn { min-width: 132px; }
-  .foot { margin: 14px 0 0; font-size: 12px; color: var(--g-muted); text-align: center; }
+  .foot { margin: 14px 0 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
 
-  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（同时压 animation-duration 与 animation-delay；
+     这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; animation-delay:0ms !important; transition-duration:.01ms !important} }
 
   /* P2: 键盘焦点可见（S5） */
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
@@ -129,9 +186,10 @@ window.SW_ICON=function(n,s){s=s||"";var P={
  'circle':'<circle cx="12" cy="12" r="5.5"/>','circle-f':'<circle cx="12" cy="12" r="5.5"/>',
  'tri-up':'<path d="M12 5l8 15H4z"/>','tri-down':'<path d="M12 19l-8-15h16z"/>','tri-left':'<path d="M5 12l15-8v16z"/>','tri-right':'<path d="M19 12L4 4v16z"/>',
  'backspace':'<path d="M9 5h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-6-7z M12.5 9.5l5 5M17.5 9.5l-5 5"/>',
- 'swap-h':'<path d="M7 4L3 8l4 4M3 8h14M17 12l4 4-4 4M21 16H7"/>'
+ 'swap-h':'<path d="M7 4L3 8l4 4M3 8h14M17 12l4 4-4 4M21 16H7"/>',
+ 'play':'<path d="M8 5v14l11-7z"/>'
 };
-var fill={ 'star':1,'circle-f':1,'tri-up':1,'tri-down':1,'tri-left':1,'tri-right':1 };
+var fill={ 'star':1,'circle-f':1,'tri-up':1,'tri-down':1,'tri-left':1,'tri-right':1,'play':1 };
 return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
 };
 </script>
@@ -153,6 +211,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
       <div class="score-box"><span class="label">分数</span><span class="val" id="score">0</span></div>
       <div class="score-box"><span class="label">最高分</span><span class="val" id="best">0</span></div>
     </div>
+    <div class="target-chip" title="目标：合成 2048 方块"><span class="dot" aria-hidden="true"></span>目标 2048</div>
   </header>
   <div class="toolbar">
     <p class="hint">相同数字相撞合并，凑出 2048</p>
@@ -231,7 +290,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
       if (!res || !res.stateJson) return;
       try {
         var rb = parseInt(JSON.parse(res.stateJson), 10) || 0;
-        if (rb > best) { best = rb; persistBest(); bestEl.textContent = best; }
+        if (rb > best) { best = rb; persistBest(); bestEl.textContent = best; lastBest = best; }
       } catch (e) {}
     }).catch(function () {});
   }
@@ -239,13 +298,23 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
   let grid, flagNew, flagMerge;
   let score = 0, startBest = 0, alive = true, wonShown = false;
   let best = parseInt(store.get(BEST_KEY) || "0", 10) || 0;
+  let lastScore = -1, lastBest = -1;
   bestEl.textContent = best;
+  // 得分 / 最高分轻弹（渲染反馈）
+  function bump(el) { el.classList.remove("bump"); void el.offsetWidth; el.classList.add("bump"); }
+  // 滑动方向反馈：台面整体轻移（transform，轨迹提示）
+  function nudge(dir) {
+    gridEl.classList.remove("nudge-l", "nudge-r", "nudge-u", "nudge-d");
+    void gridEl.offsetWidth;
+    gridEl.classList.add("nudge-" + dir);
+  }
 
-  // 预建 16 个底格，渲染时只改内容
+  // 预建 16 个底格，渲染时只改内容；--i = 行号，入场按行错落
   const cells = [];
   for (let i = 0; i < SIZE * SIZE; i++) {
     const d = document.createElement("div");
     d.className = "cell";
+    d.style.setProperty("--i", String(Math.floor(i / SIZE)));
     gridEl.appendChild(d);
     cells.push(d);
   }
@@ -285,12 +354,12 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
         if (!v) { cell.innerHTML = ""; continue; }
         const cls = v <= 2048 ? "c" + v : "csuper";
         const f = "f" + Math.min(String(v).length, 3);
-        const pop = flagNew[r][c] || flagMerge[r][c] ? " pop" : "";
-        cell.innerHTML = '<div class="tile ' + cls + " " + f + pop + '">' + v + "</div>";
+        const anim = flagNew[r][c] ? " pop" : flagMerge[r][c] ? " merge" : "";
+        cell.innerHTML = '<div class="tile ' + cls + " " + f + anim + '">' + v + "</div>";
       }
     }
-    scoreEl.textContent = score;
-    bestEl.textContent = best;
+    if (score !== lastScore) { scoreEl.textContent = score; bump(scoreEl); lastScore = score; }
+    if (best !== lastBest) { bestEl.textContent = best; bump(bestEl); lastBest = best; }
   }
 
   function canSlide() {
@@ -381,6 +450,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
     spawn();
     flagMerge = mergeMark;
     render();
+    nudge(dir);
     afterMove();
   }
 
@@ -471,6 +541,11 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
     el.addEventListener("keydown",function(e){trap(el,e)});
   }
   for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+  /* 按钮图标注入：文字前内联 SVG（SW_ICON 范式，24 viewBox / currentColor / aria-hidden） */
+  function $(id){return document.getElementById(id)}
+  $("restart").insertAdjacentHTML("afterbegin",window.SW_ICON("rotate"));
+  $("ovMain").insertAdjacentHTML("afterbegin",window.SW_ICON("rotate"));
+  $("ovMore").insertAdjacentHTML("afterbegin",window.SW_ICON("play"));
 })();
 </script>
 </body>

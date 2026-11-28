@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#F5F6F3">
 <title>拆字找字</title>
 <style>
-  /*token:GAME-THEME.md §2 基线（UI 壳全部走 token；纯 DOM 无 canvas）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;color-scheme:light }
-  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
+  /*token:GAME-THEME.md §2 基线 + §3 素材 token（--g-cz-paper1/2 题板纸面、--g-cz-chip1/2 候选字块面）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;--g-cz-paper1:#FBF6E9;--g-cz-paper2:#F0E2C6;--g-cz-chip1:#FFFDF7;--g-cz-chip2:#F2E9D5;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-cz-paper1:#2A221A;--g-cz-paper2:#1A140E;--g-cz-chip1:#2C2720;--g-cz-chip2:#171309;color-scheme:dark }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
   html, body { margin: 0; padding: 0; }
@@ -25,31 +25,48 @@
   header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; }
   .sub { font-size: 14px; color: var(--g-muted); }
   .stats { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; animation: rise .38s ease-out both; }
+  .stat:nth-child(2) { animation-delay: 40ms; }   /* 入场错落 40ms */
+  .stat:nth-child(3) { animation-delay: 80ms; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
   .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); white-space: nowrap; }
-  .board { background: var(--g-surface); border: 1px solid var(--g-border); border-radius: var(--g-radius); padding: 12px; margin-bottom: 10px; text-align: center; }
-  /*大母字：字号守八档上限 36px，视觉放大由 transform 承担（不参与布局）*/
-  .big { display: block; width: 128px; margin: 24px auto 28px; font-size: 36px; line-height: 1; font-weight: 700; color: var(--g-text); transform: scale(2.2); }
+  /*题板＝纸面「地面」：暖纸渐变 + 顶部天光 + 落地投影 + 描边*/
+  .board { position: relative; background: linear-gradient(180deg,var(--g-cz-paper1),var(--g-cz-paper2)); border: 1px solid var(--g-border); border-radius: var(--g-radius); padding: 12px; margin-bottom: 10px; text-align: center; box-shadow: var(--g-shadow), inset 0 1px 0 rgba(255,255,255,.5); animation: rise .38s ease-out both; animation-delay: 120ms; }
+  /*大母字：字号守八档上限 36px，视觉放大由 transform 承担（不参与布局）；渐变墨字 + 落地阴影*/
+  .big { display: block; width: 128px; margin: 24px auto 28px; font-size: 36px; line-height: 1; font-weight: 700; color: var(--g-text); transform: scale(2.2); text-shadow: 0 2px 0 var(--g-cz-chip2), 0 8px 18px rgba(20,40,30,.22); }
   .prompt { margin: 0 0 4px; font-size: 14px; color: var(--g-muted); }
   .prompt b { font-size: 18px; font-weight: 700; color: var(--g-primary-deep); }
+  /*图例：三秒读懂「母字=目标 / 候选块=可点 / 绿块打勾=找对」*/
+  .legend { display: flex; gap: 8px; margin: 0 2px 10px; animation: rise .38s ease-out both; animation-delay: 160ms; }
+  .lg-chip { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; min-width: 0; background: var(--g-surface2); border-radius: 10px; padding: 5px 8px; font-size: 12px; color: var(--g-muted); line-height: 1.3; white-space: nowrap; }
+  .lg-chip b { color: var(--g-text); font-weight: 600; }
+  .lg-dot { width: 12px; height: 12px; border-radius: 4px; flex: none; }
+  .lg-dot.paper { background: linear-gradient(180deg,var(--g-cz-paper1),var(--g-cz-paper2)); border: 1px solid var(--g-border); }
+  .lg-dot.chip { background: linear-gradient(180deg,var(--g-cz-chip1),var(--g-cz-chip2)); border: 1px solid var(--g-border); }
+  .lg-dot.ok { background: var(--g-primary-soft); border: 1px solid var(--g-primary-deep); }
   .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
   .cands { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px; }
   .btn {
     min-height: 44px; padding: 0 14px; flex: 1;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
     border: 0; border-radius: var(--g-radius-btn);
     background: var(--g-btn-primary); color: #fff;
     font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    transition: transform .14s ease-out, opacity .16s ease-out, background .16s ease-out;
   }
-  .btn:active { opacity: .85; }
+  .btn:active { transform: scale(.96); }
   .btn.ghost { background: var(--g-surface2); color: var(--g-text); }
   .btn:disabled { opacity: .4; }
-  .btn.cand { min-height: 56px; padding: 0; flex: none; font-size: 22px; font-weight: 600; background: var(--g-surface); color: var(--g-text); border: 1px solid var(--g-border); border-radius: var(--g-radius-inner); box-shadow: 0 1px 0 var(--g-border); }
-  .btn.cand:active { opacity: .8; }
-  .btn.cand.ok { background: var(--g-primary-soft); color: var(--g-on-soft); border-color: transparent; box-shadow: none; }
+  .swi { display: inline-block; vertical-align: -0.14em; flex: none; }
+  /*候选字块＝可点元素：凸面渐变 + 顶部亮棱 + 落地投影；选中/找对走品牌软绿 + 矢量对勾*/
+  .btn.cand { position: relative; min-height: 56px; padding: 0; flex: none; font-size: 22px; font-weight: 600; color: var(--g-text); border: 1px solid var(--g-border); border-radius: var(--g-radius-inner); background: linear-gradient(180deg,var(--g-cz-chip1),var(--g-cz-chip2)); box-shadow: 0 2px 6px rgba(20,40,30,.10), inset 0 1px 0 rgba(255,255,255,.6); transition: transform .14s ease-out, background .16s ease-out, color .16s ease-out, box-shadow .16s ease-out; animation: rise .3s ease-out both; }
+  .btn.cand:active { transform: scale(.96); }
+  .btn.cand.ok { background: linear-gradient(180deg,var(--g-primary-soft),var(--g-cz-chip2)); color: var(--g-on-soft); border-color: transparent; box-shadow: inset 0 0 0 2px var(--g-primary-deep); }
+  .btn.cand.ok::after { content: ""; position: absolute; right: 8px; top: 8px; width: 10px; height: 6px; border-left: 2px solid var(--g-primary-deep); border-bottom: 2px solid var(--g-primary-deep); transform: rotate(-45deg); }
   .btn.cand.bad { animation: shake .26s ease-in-out; border-color: var(--g-danger); color: var(--g-danger); }
-  .btn.cand.peek { box-shadow: inset 0 0 0 2px var(--g-warning); }
+  .btn.cand.peek { box-shadow: inset 0 0 0 2px var(--g-warning), 0 0 0 3px var(--g-primary-soft); }
   @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
   .tools { display: flex; gap: 8px; }
   .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
   .overlay {
@@ -62,15 +79,15 @@
     width: 100%; max-width: 320px; padding: 22px 18px;
     background: var(--g-surface); border-radius: var(--g-radius);
     box-shadow: var(--g-shadow); text-align: center;
-    animation: pop .25s ease-out;
+    animation: pop .3s ease-out;
   }
-  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  @keyframes pop { 0% { transform: scale(.9); opacity: 0; } 60% { transform: scale(1.03); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
   .panel h2 { margin: 0 0 6px; font-size: 18px; }
   .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.7; }
   .panel .btn { width: 100%; }
 
   /* S2: 动效敏感用户降级（动效层指令，不受 §4 主题层 matchMedia 禁令约束） */
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; animation-delay:0ms !important; transition-duration:.01ms !important} }
   /* P2: 键盘焦点可见 */
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 </style>
@@ -86,7 +103,8 @@ window.SW_ICON=function(n,s){s=s||"";var P={
  'circle':'<circle cx="12" cy="12" r="5.5"/>','circle-f':'<circle cx="12" cy="12" r="5.5"/>',
  'tri-up':'<path d="M12 5l8 15H4z"/>','tri-down':'<path d="M12 19l-8-15h16z"/>','tri-left':'<path d="M5 12l15-8v16z"/>','tri-right':'<path d="M19 12L4 4v16z"/>',
  'backspace':'<path d="M9 5h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-6-7z M12.5 9.5l5 5M17.5 9.5l-5 5"/>',
- 'swap-h':'<path d="M7 4L3 8l4 4M3 8h14M17 12l4 4-4 4M21 16H7"/>'
+ 'swap-h':'<path d="M7 4L3 8l4 4M3 8h14M17 12l4 4-4 4M21 16H7"/>',
+ 'bulb':'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.8.7 1 1.5 1 2.5h6c0-1 .2-1.8 1-2.5A6 6 0 0 0 12 3z"/>'
 };
 var fill={ 'star':1,'circle-f':1,'tri-up':1,'tri-down':1,'tri-left':1,'tri-right':1 };
 return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
@@ -117,6 +135,11 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
   <div class="board">
     <div class="big" id="big">驾</div>
     <p class="prompt" id="prompt">找出组成「<b>驾</b>」的部件字</p>
+  </div>
+  <div class="legend">
+    <span class="lg-chip"><span class="lg-dot paper" aria-hidden="true"></span><span><b>母字</b>· 目标</span></span>
+    <span class="lg-chip"><span class="lg-dot chip" aria-hidden="true"></span><span><b>候选块</b>· 点选</span></span>
+    <span class="lg-chip"><span class="lg-dot ok" aria-hidden="true"></span><span><b>绿块</b>· 找对</span></span>
   </div>
   <p class="msg" id="msg" role="status" aria-live="polite"></p>
   <div class="cands" id="cands"></div>
@@ -271,6 +294,8 @@ var totalScore=saveData.total,doneSave=saveData.done;
 var timerId=null,lastTs=0,overlayMode="start";
 function $(id){return document.getElementById(id)}
 function say(t){$("msg").textContent=t}
+/*覆盖层按钮：图标 + 文本同存，更新文案不得抹掉已注入 SVG*/
+function setOvBtn(t,icon){$("ovBtn").innerHTML=(icon?window.SW_ICON(icon):"")+t}
 function fmtTime(t){var v=Math.max(0,Math.ceil(t));var m=Math.floor(v/60),s=v%60;return(m<10?"0":"")+m+":"+(s<10?"0":"")+s}
 function mulberry(seed){var s=seed>>>0;return function(){s|=0;s=(s+0x6d2b79f5)|0;var t=Math.imul(s^(s>>>15),1|s);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296}}
 function shuffle(arr,rng){for(var k=arr.length-1;k>0;k--){var j=Math.floor(rng()*(k+1));var t=arr[k];arr[k]=arr[j];arr[j]=t}return arr}
@@ -304,9 +329,10 @@ function startLevel(n){
   $("big").textContent=L.char;
   $("prompt").innerHTML="找出组成「<b>"+L.char+"</b>」的部件字";
   var cs=$("cands");cs.innerHTML="";
-  cands.forEach(function(ch){
+  cands.forEach(function(ch,i){
     var b=document.createElement("button");
     b.className="btn cand";b.textContent=ch;b.setAttribute("data-ch",ch);
+    b.style.animationDelay=Math.min(i*30,240)+"ms";   /* 入场错落 30ms，总时长 ≤600ms */
     b.addEventListener("click",function(){pick(ch,b)});
     cs.appendChild(b);
   });
@@ -349,14 +375,14 @@ function win(){
   if(GB.available)GB.reportScore("chai-zi",{metricValue:doneCount,metricExtra:totalScore}).catch(function(){});
   $("ovTitle").textContent="过关！";
   $("ovDesc").innerHTML="「"+LEVELS[cur].char+"」 = "+parts.join(" + ")+"<br>本关得分 "+levelScore+"（含奖励 "+bonus+"）· 累计总分 "+totalScore;
-  $("ovBtn").textContent=cur+1<LEVELS.length?"下一关":"再玩一次";
+  setOvBtn(cur+1<LEVELS.length?"下一关":"再玩一次",cur+1<LEVELS.length?"arrow-right":"rotate");
   overlayMode="win";showOverlay();
 }
 function lose(reason){
   over=true;state="over";stopTimer();
   $("ovTitle").textContent="本关失败";
   $("ovDesc").innerHTML=reason+"<br>已找到 "+Object.keys(found).length+"/"+parts.length+" · 累计总分 "+totalScore;
-  $("ovBtn").textContent="重试本关";
+  setOvBtn("重试本关","rotate");
   overlayMode="lose";showOverlay();
 }
 function showOverlay(){$("overlay").classList.add("show")}
@@ -392,7 +418,7 @@ startLevel(startIdx);
 state="idle";stopTimer();
 $("ovTitle").textContent="拆字找字";
 $("ovDesc").innerHTML="规则：母字被拆成部件，混进了候选字堆里。找出它的全部部件字（偏旁部首不算字）。<br>例：驾 "+SW_ICON('arrow-right')+" 加 + 马 · 湖 "+SW_ICON('arrow-right')+" 胡 "+SW_ICON('arrow-right')+" 古 + 月<br>限时找齐过关，点错扣一次机会。";
-$("ovBtn").textContent="开始游戏";
+setOvBtn("开始游戏","play");
 overlayMode="start";showOverlay();
 syncLevelsFromServer();syncSaveFromServer();
 })();
@@ -428,6 +454,14 @@ syncLevelsFromServer();syncSaveFromServer();
     el.addEventListener("keydown",function(e){trap(el,e)});
   }
   for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+<script>
+/* 工具钮图标注入（内联 SVG，零外链；用 insertAdjacentHTML，不整按钮 textContent=） */
+(function(){
+  function $(id){return document.getElementById(id)}
+  var dp=[["btnHint","bulb"],["btnReset","rotate"]],j;
+  for(j=0;j<dp.length;j++)$(dp[j][0]).insertAdjacentHTML("afterbegin",window.SW_ICON(dp[j][1]));
 })();
 </script>
 </body>

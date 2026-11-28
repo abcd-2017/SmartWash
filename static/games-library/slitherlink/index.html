@@ -6,9 +6,11 @@
 <meta name="theme-color" content="#F5F6F3">
 <title>数回</title>
 <style>
-  /*token:GAME-THEME.md §2 基线 + §3 素材 token（--g-st-* 为本作素材色，深色为同色相压暗变体）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-st-board:#FFFFFF;--g-st-dot:#A9AEA9;--g-st-line:#1C1C1E;--g-st-x:#A83850;--g-st-cell:#FFFFFF;color-scheme:light }
-  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-st-board:#1D201E;--g-st-dot:#4A544C;--g-st-line:#E6E9E6;--g-st-x:#DB7186;--g-st-cell:#1D201E;color-scheme:dark }
+  /*token:GAME-THEME.md §2 基线 + §3 素材 token（--g-sl-* 地面/格砖/沟槽/轨迹/数字牌）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-on-primary:#FFFFFF;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;
+    --g-sl-ground1:#F4F7F2;--g-sl-ground2:#E6ECE1;--g-sl-cell1:#FFFFFF;--g-sl-cell2:#EFF3ED;--g-sl-groove:#D3DCCB;--g-sl-edge:#17734A;--g-sl-edge-hi:#8FE3B6;--g-sl-num1:#E8F6EF;--g-sl-num2:#17734A;--g-sl-num-ink:#0B3625;--g-sl-num-sat:#04150D;--g-sl-num-over:#2A0810;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);
+    --g-sl-ground1:#1C201D;--g-sl-ground2:#121512;--g-sl-cell1:#2A2F2B;--g-sl-cell2:#1F241F;--g-sl-groove:#0A0D0B;--g-sl-edge:#5BC894;--g-sl-edge-hi:#9BE3BC;--g-sl-num1:#1D3229;--g-sl-num2:#0B241A;--g-sl-num-ink:#B9E8CF;--g-sl-num-sat:#4ADE6E;--g-sl-num-over:#DB7186;color-scheme:dark }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
   html, body { margin: 0; padding: 0; }
@@ -22,57 +24,81 @@
     touch-action: manipulation; overscroll-behavior: none;
   }
   .wrap { width: 100%; max-width: 480px; }
-  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
+  header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
   .sub { font-size: 14px; color: var(--g-muted); }
+  /* 页头关卡标签 */
+  .lvtag { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 10px; background: var(--g-primary-soft); color: var(--g-on-soft); font-size: 14px; font-weight: 600; line-height: 1.4; white-space: nowrap; }
+  .lvtag .lvdot { width: 8px; height: 8px; border-radius: 50%; background: var(--g-primary-deep); flex: none; }
   .levels { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 10px; scrollbar-width: none; }
   .levels::-webkit-scrollbar { display: none; }
-  .lv { flex: 0 0 auto; min-width: 48px; min-height: 44px; padding: 4px 8px; border: 1px solid var(--g-border); border-radius: var(--g-radius-inner); background: var(--g-surface); color: var(--g-muted); font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
-  .lv.cur { border-color: var(--g-primary); color: var(--g-primary-deep); background: var(--g-primary-soft); }
+  .lv { flex: 0 0 auto; min-width: 48px; min-height: 44px; padding: 4px 8px; border: 1px solid var(--g-border); border-radius: var(--g-radius-inner); background: var(--g-surface); color: var(--g-muted); font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer; box-shadow: inset 0 1px 0 rgba(255,255,255,.6), 0 1px 2px rgba(20,40,30,.05); transition: transform .14s ease-out, background .16s ease-out, border-color .16s ease-out, color .16s ease-out; }
+  .lv:not(:disabled):active { transform: scale(.96); }
+  .lv.cur { border-color: var(--g-primary); color: var(--g-primary-deep); background: var(--g-primary-soft); box-shadow: 0 0 0 1px var(--g-primary) inset; }
   .lv.done { color: var(--g-primary-deep); }
   .lv:disabled { opacity: .45; cursor: default; }
-  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 2px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
+  .stat { background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; min-width: 0; animation: rise .34s ease-out both; }
+  .stat:nth-child(2) { animation-delay: 40ms; }
+  .stat:nth-child(3) { animation-delay: 80ms; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
   .stat .val { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val.err { color: var(--g-danger); }
+  .stat .val.bump { animation: valPop .18s ease-out; }
   .stage { position: relative; }
-  canvas { display: block; width: 100%; touch-action: none; border-radius: var(--g-radius-inner); box-shadow: var(--g-shadow); }
+  canvas { display: block; width: 100%; touch-action: none; border-radius: var(--g-radius); border: 1px solid var(--g-border); box-shadow: var(--g-shadow); animation: boardin .34s ease-out both; }
+  /* 三秒读懂图例 */
+  .legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 12px; margin: 8px 2px 0; font-size: 12px; color: var(--g-muted); }
+  .legend .li { display: inline-flex; align-items: center; gap: 5px; }
+  .legend .sw { width: 16px; height: 16px; border-radius: 5px; flex: none; }
+  .legend .sw.line { width: 20px; height: 6px; border-radius: 3px; background: linear-gradient(180deg, var(--g-sl-edge-hi), var(--g-sl-edge)); }
+  .legend .sw.num { background: linear-gradient(180deg, var(--g-sl-num1), var(--g-sl-num2)); color: var(--g-sl-num-ink); font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; box-shadow: inset 0 1px 0 rgba(255,255,255,.5); }
+  .legend .sw.dot { background: var(--g-sl-groove); box-shadow: inset 0 0 0 1px var(--g-border); }
   .msg { min-height: 20px; margin: 10px 2px 8px; font-size: 14px; color: var(--g-muted); text-align: center; }
   .tools { display: flex; gap: 8px; }
-  .btn { min-height: 44px; padding: 0 12px; flex: 1; border: 0; border-radius: var(--g-radius-btn); background: var(--g-surface2); color: var(--g-text); font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer; }
-  .btn:active { opacity: .85; }
+  .btn { min-height: 44px; padding: 0 12px; flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 0; border-radius: var(--g-radius-btn); background: var(--g-surface2); color: var(--g-text); font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer; transition: transform .14s ease-out, opacity .16s ease-out, background .16s ease-out; }
+  .btn:active { transform: scale(.96); }
   .btn[disabled] { opacity: .4; }
+  .btn.primary { background: var(--g-btn-primary); color: var(--g-on-primary); }
+  .swi { display: inline-block; vertical-align: -0.14em; flex: none; }
   .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
-  .overlay { position: fixed; inset: 0; z-index: 10; background: var(--g-scrim); display: none; align-items: center; justify-content: center; padding: 20px; }
-  .overlay.show { display: flex; }
-  .panel { width: 100%; max-width: 340px; padding: 22px 18px; background: var(--g-surface); border-radius: var(--g-radius); box-shadow: var(--g-shadow); text-align: center; animation: pop .25s ease-out; }
-  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .overlay { position: fixed; inset: 0; z-index: 10; background: var(--g-scrim); display: none; align-items: center; justify-content: center; padding: 20px; overflow-y: auto; }
+  .overlay.show { display: flex; animation: fadein .2s ease-out; }
+  .panel { width: 100%; max-width: 340px; padding: 22px 18px; background: var(--g-surface); border-radius: var(--g-radius); box-shadow: var(--g-shadow); text-align: center; animation: pop .3s ease-out; }
+  .overlay.win .panel { animation: winpop .34s ease-out; }
   .panel h2 { margin: 0 0 6px; font-size: 18px; }
-  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
-  .panel .desc b { color: var(--g-primary-deep); font-size: 28px; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.7; }
+  .panel .desc b { color: var(--g-primary-deep); font-size: 22px; }
   .panel .btn { width: 100%; }
-  .lvgrid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-bottom: 14px; }
-  .lvbtn { min-height: 44px; border: 0; border-radius: var(--g-radius-inner); background: var(--g-surface2); color: var(--g-text); font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer; }
+  .lvgrid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-bottom: 14px; max-height: 300px; overflow-y: auto; }
+  .lvbtn { min-height: 44px; border: 0; border-radius: var(--g-radius-inner); background: var(--g-surface2); color: var(--g-text); font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer; transition: transform .14s ease-out, background .16s ease-out; }
+  .lvbtn:not([disabled]):active { transform: scale(.96); }
   .lvbtn[disabled] { opacity: .35; }
   .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
 
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes boardin { from { opacity: 0; transform: scale(.97); } to { opacity: 1; transform: none; } }
+  @keyframes pop { 0% { transform: scale(.9); opacity: 0; } 60% { transform: scale(1.03); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+  @keyframes winpop { 0% { transform: scale(.84); opacity: 0; } 55% { transform: scale(1.06); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+  @keyframes valPop { 0% { transform: scale(.8); } 60% { transform: scale(1.12); } 100% { transform: scale(1); } }
+
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（动效层指令，不受 §4 主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; animation-delay:0ms !important; transition-duration:.01ms !important} }
+  /* P2: 键盘焦点可见（S5） */
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 </style>
 <script>
-/* SW 图标库：内联 SVG 线性图标（stroke=currentColor，24 viewBox） */
+/* 内联图标库：SW_ICON（24 viewBox / currentColor / 零外链）*/
 window.SW_ICON=function(n,s){s=s||"";var P={
- 'arrow-right':'<path d="M5 12h14M13 6l6 6-6 6"/>','arrow-left':'<path d="M19 12H5M11 6l-6 6 6 6"/>',
- 'arrow-up':'<path d="M12 19V5M6 11l6-6 6 6"/>','arrow-down':'<path d="M12 5v14M6 13l6 6 6-6"/>',
- 'rotate':'<path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/>',
- 'check':'<path d="M4 12.5l5 5L20 6.5"/>','x':'<path d="M6 6l12 12M18 6L6 18"/>',
- 'star':'<path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/>',
- 'star-o':'<path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/>',
- 'circle':'<circle cx="12" cy="12" r="5.5"/>','circle-f':'<circle cx="12" cy="12" r="5.5"/>',
- 'tri-up':'<path d="M12 5l8 15H4z"/>','tri-down':'<path d="M12 19l-8-15h16z"/>','tri-left':'<path d="M5 12l15-8v16z"/>','tri-right':'<path d="M19 12L4 4v16z"/>',
- 'backspace':'<path d="M9 5h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-6-7z M12.5 9.5l5 5M17.5 9.5l-5 5"/>',
- 'swap-h':'<path d="M7 4L3 8l4 4M3 8h14M17 12l4 4-4 4M21 16H7"/>'
+ 'undo':'<path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/>',
+ 'hint':'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.8.8 1 1.6 1 2.5h6c0-.9.2-1.7 1-2.5A6 6 0 0 0 12 3z"/>',
+ 'rotate':'<path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/>',
+ 'grid':'<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>',
+ 'play':'<path d="M8 5v14l11-7z"/>',
+ 'check':'<path d="M4 12.5l5 5L20 6.5"/>',
+ 'x':'<path d="M6 6l12 12M18 6L6 18"/>'
 };
-var fill={ 'star':1,'circle-f':1,'tri-up':1,'tri-down':1,'tri-left':1,'tri-right':1 };
+var fill={ 'play':1,'check':1 };
 return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
 };
 </script>
@@ -91,14 +117,19 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
 </head>
 <body>
 <div class="wrap">
-  <header><span class="sub" id="lvTag">第 1 关</span><span class="sub" id="lvRule">画一条闭合环</span></header>
+  <header><span class="lvtag" id="lvTag"><span class="lvdot" aria-hidden="true"></span><span id="lvTagText">第 1 关</span></span><span class="sub" id="lvRule">画一条闭合环</span></header>
   <nav class="levels" id="levels" aria-label="关卡选择"></nav>
   <div class="stats">
     <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1 / 48</span></div>
-    <div class="stat"><span class="label">边数</span><span class="val" id="stOn">0</span></div>
+    <div class="stat"><span class="label">已画边</span><span class="val" id="stOn">0</span></div>
     <div class="stat"><span class="label">冲突</span><span class="val" id="stErr">0</span></div>
   </div>
-  <div class="stage"><canvas id="cv" aria-label="数回棋盘" role="img"></canvas></div>
+  <div class="stage"><canvas id="cv" role="img" aria-label="数回棋盘：点两点之间的边画线，围出一条闭合环"></canvas></div>
+  <div class="legend">
+    <span class="li"><span class="sw line" aria-hidden="true"></span>环线 = 你画的边</span>
+    <span class="li"><span class="sw num" aria-hidden="true">3</span>数字 = 该格用掉的边</span>
+    <span class="li"><span class="sw dot" aria-hidden="true"></span>灰点 = 可点的边</span>
+  </div>
   <p class="msg" id="msg" role="status" aria-live="polite">点两点之间的边：画线 → 打叉 → 清除</p>
   <div class="tools">
     <button class="btn" id="btnUndo" type="button">撤销</button>
@@ -106,14 +137,14 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
     <button class="btn" id="btnReset" type="button">重开</button>
     <button class="btn" id="btnLv" type="button">选关</button>
   </div>
-  <p class="foot">数字 = 该格四条边中被环线使用的那几条；环线不交叉、不分叉、闭合</p>
+  <p class="foot">数字 = 该格四条边中被环线使用的那几条；环线不交叉、不分叉、闭合<br>键盘：方向键选边 · 空格画线 · Z 撤销 · H 提示 · Tab 换边</p>
 </div>
 <div class="overlay" role="dialog" aria-modal="true" id="overlay">
   <div class="panel">
     <h2 id="ovTitle">过关</h2>
     <p class="desc" id="ovDesc"></p>
     <div class="lvgrid" id="lvgrid" hidden></div>
-    <button class="btn" id="ovBtn" type="button">下一关</button>
+    <button class="btn primary" id="ovBtn" type="button">下一关</button>
   </div>
 </div>
 <script>
@@ -285,7 +316,7 @@ function slitherSolve(R,C,clues,cap){
   dfs(new Array(E).fill(-1));
   return {count:count,nodes:nodes,sol:first};
 }
-/* ---------- 调色板 ---------- */
+/* ---------- 调色板（canvas 颜色全部读 CSS 变量） ---------- */
 var PAL={};
 function palLoad(){
   var s=getComputedStyle(document.documentElement);
@@ -294,9 +325,28 @@ function palLoad(){
     text:v("--g-text"),muted:v("--g-muted"),faint:v("--g-faint"),
     primary:v("--g-primary"),deep:v("--g-primary-deep"),soft:v("--g-primary-soft"),
     success:v("--g-success"),warning:v("--g-warning"),danger:v("--g-danger"),
-    board:v("--g-st-board"),dot:v("--g-st-dot"),line:v("--g-st-line"),x:v("--g-st-x"),cell:v("--g-st-cell")};
+    ground1:v("--g-sl-ground1"),ground2:v("--g-sl-ground2"),
+    cell1:v("--g-sl-cell1"),cell2:v("--g-sl-cell2"),groove:v("--g-sl-groove"),
+    edge:v("--g-sl-edge"),edgeHi:v("--g-sl-edge-hi"),
+    num1:v("--g-sl-num1"),num2:v("--g-sl-num2"),numInk:v("--g-sl-num-ink"),
+    numSat:v("--g-sl-num-sat"),numOver:v("--g-sl-num-over")};
 }
 window.__gOnTheme=function(){palLoad()};
+/* ---------- 颜色工具：仅混合 PAL 色值，JS 内零颜色字面量 ---------- */
+var BLACK="rgb(0,0,0)",WHITE="rgb(255,255,255)";   // 恒暗 / 恒白（阴影与高光）
+function colParse(c){
+  c=String(c).trim();
+  if(c.charAt(0)==="#")c=c.slice(1);
+  if(c.length===3)c=c.charAt(0)+c.charAt(0)+c.charAt(1)+c.charAt(1)+c.charAt(2)+c.charAt(2);
+  if(c.length===6)return[parseInt(c.slice(0,2),16),parseInt(c.slice(2,4),16),parseInt(c.slice(4,6),16)];
+  var m=c.match(/(\d+)[,\s]+(\d+)[,\s]+(\d+)/);
+  return m?[+m[1],+m[2],+m[3]]:[0,0,0];
+}
+function colMix(a,b,t){
+  var A=colParse(a),B=colParse(b);
+  return "rgb("+Math.round(A[0]+(B[0]-A[0])*t)+","+Math.round(A[1]+(B[1]-A[1])*t)+","+Math.round(A[2]+(B[2]-A[2])*t)+")";
+}
+function colShade(c,t){return colMix(c,t<0?BLACK:WHITE,t<0?-t:t)}
 /* ---------- 状态 ---------- */
 var KEY="sw.slitherlink.v1";
 function loadSave(){try{var s=JSON.parse(localStorage.getItem(KEY));if(s&&typeof s==="object")return s}catch(e){}return{}}
@@ -312,6 +362,10 @@ var cv=document.getElementById("cv"),ctx=cv.getContext("2d");
 var W=0,H=0,dpr=1,cell=40,pad=18;
 function $(id){return document.getElementById(id)}
 function say(t){$("msg").textContent=t}
+/* 记分轻弹：重启动画（渲染层反馈） */
+function bump(el){el.classList.remove("bump");void el.offsetWidth;el.classList.add("bump")}
+/* 覆盖层主 CTA：文字前带内联 SVG 图标 */
+function setOvBtn(t,icon){$("ovBtn").innerHTML=(icon?SW_ICON(icon):"")+t}
 /* ---------- 布局 ---------- */
 function resize(){
   var wCss=cv.parentElement.clientWidth||360;
@@ -342,8 +396,8 @@ function analyze(){
 function updStats(){
   var a=analyze(),n=0;for(var k in a.errs)n++;
   $("stLv").textContent=(lv+1)+" / "+LEVELS.length;
-  $("stOn").textContent=a.on;
-  $("stErr").textContent=n;
+  $("stOn").textContent=a.on;bump($("stOn"));
+  var ev=$("stErr");ev.textContent=n;ev.classList.toggle("err",n>0);bump(ev);
   $("btnUndo").disabled=!history.length||over;
   errEdges=a.errs;
 }
@@ -355,7 +409,7 @@ function loadLevel(n){
   R=L.r;C=L.c;info=edgeInfo(R,C);
   state=info.edgeVerts.map(function(){return 0});//0未知 1线 2叉
   history=[];over=false;curEdge=-1;errEdges={};
-  $("lvTag").textContent="第 "+(lv+1)+" 关";
+  $("lvTagText").textContent="第 "+(lv+1)+" 关";
   $("lvRule").textContent=C+"×"+R;
   var res=slitherSolve(R,C,L.clues,150000);
   if(res.count!==1)say("警告：内嵌求解器判定本关解不唯一（数据异常）");
@@ -421,7 +475,8 @@ function winLevel(){
   if(GB.available)GB.reportScore("slitherlink",{metricValue:lv+1,metricExtra:analyze().on}).catch(function(){});
   $("ovTitle").textContent=(lv>=LEVELS.length-1)?"全部通关！":"过关！";
   $("ovDesc").innerHTML="第 "+(lv+1)+" 关完成<br>环线 "+analyze().on+" 条边";
-  $("ovBtn").textContent=(lv>=LEVELS.length-1)?"回到第 1 关":"下一关";
+  setOvBtn((lv>=LEVELS.length-1)?"回到第 1 关":"下一关",(lv>=LEVELS.length-1)?"rotate":"play");
+  $("overlay").classList.add("win");
   $("overlay").classList.add("show");
 }
 function renderLevels(){
@@ -441,42 +496,155 @@ function edgeMid(e){
   var ev=info.edgeVerts[e];
   return {x:pad+(ev[0]+ev[2])/2*cell,y:pad+(ev[1]+ev[3])/2*cell};
 }
+/* 圆角矩形路径 */
+function rr(x,y,w,h,r){
+  r=Math.max(0,Math.min(r,w/2,h/2));
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+}
+/* 数字牌字号：只取八档值 */
+function clueFont(){
+  if(cell>=72)return 28;
+  if(cell>=56)return 22;
+  if(cell>=44)return 18;
+  return 16;
+}
+/* 边状态差异 → 160ms 长出 / 淡入（纯渲染层） */
+var prevState=null,animMap={};
+function syncAnim(){
+  var now=performance.now();
+  if(!prevState||prevState.length!==state.length){prevState=state.slice();animMap={};return}
+  for(var e=0;e<state.length;e++){
+    if(state[e]!==prevState[e]){if(!animMap[e])animMap[e]=now;prevState[e]=state[e]}
+  }
+  for(var k in animMap)if(now-animMap[k]>240)delete animMap[k];
+}
+function animP(e){
+  if(window.__gRM)return 1;
+  var t=animMap[e];if(!t)return 1;
+  var p=Math.max(0,Math.min(1,(performance.now()-t)/160));
+  return 1-(1-p)*(1-p);
+}
+/* 格子四边中被环线使用的条数（目标态，只读） */
+function clueCount(c){
+  var s=0;for(var q=0;q<4;q++)if(state[info.cellEdges[c][q]]===1)s++;
+  return s;
+}
 function draw(){
-  ctx.fillStyle=PAL.board;ctx.fillRect(0,0,W,H);
-  if(!L)return;
-  // 格子底
-  for(var y=0;y<R;y++)for(var x=0;x<C;x++){
-    ctx.fillStyle=PAL.cell;ctx.fillRect(pad+x*cell+1,pad+y*cell+1,cell-2,cell-2);
-    var cl=L.clues[y][x];
-    if(cl>=0){
-      ctx.fillStyle=PAL.text;
-      ctx.font="700 22px -apple-system,'PingFang SC',sans-serif";
-      ctx.textAlign="center";ctx.textBaseline="middle";
-      ctx.fillText(String(cl),pad+x*cell+cell/2,pad+y*cell+cell/2+1);
-    }
+  ctx.fillStyle=PAL.ground2;ctx.fillRect(0,0,W,H);
+  if(!L){requestAnimationFrame(draw);return}
+  syncAnim();
+  var gap=Math.max(1.5,cell*0.05),rad=Math.min(10,cell*0.18),i,x,y;
+  /* 1. 地面「面」：渐变 + 边界环 + 投影 */
+  ctx.save();
+  ctx.shadowColor="rgba(0,0,0,0.16)";ctx.shadowBlur=10;ctx.shadowOffsetY=3;
+  var bg=ctx.createLinearGradient(0,0,0,H);
+  bg.addColorStop(0,PAL.ground1);bg.addColorStop(1,PAL.ground2);
+  ctx.fillStyle=bg;rr(0.5,0.5,W-1,H-1,16);ctx.fill();
+  ctx.restore();
+  ctx.lineWidth=1;ctx.strokeStyle=PAL.border;rr(0.5,0.5,W-1,H-1,16);ctx.stroke();
+  ctx.save();rr(1,1,W-2,H-2,15);ctx.clip();
+  /* 2. 边界「面」：格间沟槽带 */
+  ctx.strokeStyle=PAL.groove;ctx.lineWidth=Math.max(2,gap*1.15);ctx.lineCap="butt";
+  ctx.beginPath();
+  for(i=0;i<=C;i++){ctx.moveTo(pad+i*cell,pad);ctx.lineTo(pad+i*cell,pad+R*cell)}
+  for(i=0;i<=R;i++){ctx.moveTo(pad,pad+i*cell);ctx.lineTo(pad+C*cell,pad+i*cell)}
+  ctx.stroke();
+  /* 3. 格砖：渐变面 + 顶光 + 投影 */
+  for(y=0;y<R;y++)for(x=0;x<C;x++){
+    var x0=pad+x*cell+gap/2,y0=pad+y*cell+gap/2,s=cell-gap;
+    ctx.save();
+    ctx.shadowColor="rgba(0,0,0,0.10)";ctx.shadowBlur=cell*0.06;ctx.shadowOffsetY=cell*0.02;
+    var cg=ctx.createLinearGradient(0,y0,0,y0+s);
+    cg.addColorStop(0,PAL.cell1);cg.addColorStop(1,PAL.cell2);
+    ctx.fillStyle=cg;rr(x0,y0,s,s,Math.min(rad,s*0.22));ctx.fill();
+    ctx.restore();
+    ctx.lineWidth=1;ctx.strokeStyle=colShade(PAL.cell2,-0.14);
+    rr(x0+0.5,y0+0.5,s-1,s-1,Math.min(rad,s*0.22));ctx.stroke();
   }
-  // 边
-  for(var e=0;e<info.E;e++){
-    var ev=info.edgeVerts[e],ax=pad+ev[0]*cell,ay=pad+ev[1]*cell,bx=pad+ev[2]*cell,by=pad+ev[3]*cell;
-    var m=edgeMid(e);
-    if(state[e]===1){
-      ctx.strokeStyle=errEdges[e]?PAL.danger:PAL.line;ctx.lineWidth=4;ctx.lineCap="round";
+  /* 4. 目标：数字牌（满足 / 超限改语义色） */
+  var fs=clueFont();
+  for(y=0;y<R;y++)for(x=0;x<C;x++){
+    var cl=L.clues[y][x];if(cl<0)continue;
+    var idx=y*C+x,cnt=clueCount(idx),sat=cnt===cl,over=cnt>cl;
+    var cx=pad+x*cell+cell/2,cy=pad+y*cell+cell/2,cs=Math.min(cell-gap,cell*0.68);
+    ctx.save();
+    ctx.shadowColor="rgba(0,0,0,0.16)";ctx.shadowBlur=cell*0.07;ctx.shadowOffsetY=cell*0.025;
+    var ng=ctx.createLinearGradient(0,cy-cs/2,0,cy+cs/2);
+    ng.addColorStop(0,PAL.num1);ng.addColorStop(1,PAL.num2);
+    ctx.fillStyle=ng;rr(cx-cs/2,cy-cs/2,cs,cs,Math.min(10,cs*0.24));ctx.fill();
+    ctx.restore();
+    ctx.save();ctx.globalAlpha=0.5;ctx.strokeStyle=WHITE;ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(cx-cs/2+3,cy-cs/2+1.5);ctx.lineTo(cx+cs/2-3,cy-cs/2+1.5);ctx.stroke();
+    ctx.restore();
+    if(sat||over){
+      ctx.lineWidth=2;ctx.strokeStyle=over?PAL.danger:PAL.success;
+      rr(cx-cs/2+1,cy-cs/2+1,cs-2,cs-2,Math.min(10,cs*0.24));ctx.stroke();
+    }
+    ctx.fillStyle=over?PAL.numOver:(sat?PAL.numSat:PAL.numInk);
+    ctx.font="700 "+fs+"px -apple-system,'PingFang SC',sans-serif";
+    ctx.textAlign="center";ctx.textBaseline="middle";
+    ctx.fillText(String(cl),cx,cy+1);
+  }
+  /* 5. 轨迹：环线 / 排除叉 / 可点手柄 */
+  for(i=0;i<info.E;i++){
+    var ev=info.edgeVerts[i],ax=pad+ev[0]*cell,ay=pad+ev[1]*cell,bx=pad+ev[2]*cell,by=pad+ev[3]*cell;
+    var m=edgeMid(i);
+    if(state[i]===1){
+      var p=animP(i),w=Math.max(3,cell*0.12)*(0.45+0.55*p);
+      var col=errEdges[i]?PAL.danger:PAL.edge;
+      var hi=errEdges[i]?colMix(PAL.danger,WHITE,0.45):PAL.edgeHi;
+      ctx.save();
+      ctx.globalAlpha=0.35+0.65*p;
+      ctx.shadowColor="rgba(0,0,0,0.28)";ctx.shadowBlur=cell*0.08;ctx.shadowOffsetY=cell*0.03;
+      ctx.strokeStyle=col;ctx.lineWidth=w;ctx.lineCap="round";
       ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(bx,by);ctx.stroke();
-    }else if(state[e]===2){
-      ctx.strokeStyle=PAL.x;ctx.lineWidth=2.5;ctx.lineCap="round";
-      var d=Math.min(8,cell*0.22);
-      ctx.beginPath();ctx.moveTo(m.x-d,m.y-d);ctx.lineTo(m.x+d,m.y+d);
-      ctx.moveTo(m.x+d,m.y-d);ctx.lineTo(m.x-d,m.y+d);ctx.stroke();
-    }else if(e===curEdge&&!over){
-      ctx.strokeStyle=PAL.deep;ctx.lineWidth=2;ctx.setLineDash([4,4]);
-      ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(bx,by);ctx.stroke();ctx.setLineDash([]);
+      ctx.restore();
+      ctx.save();ctx.globalAlpha=(0.35+0.65*p)*0.85;
+      ctx.strokeStyle=hi;ctx.lineWidth=Math.max(1,w*0.34);ctx.lineCap="round";
+      ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(bx,by);ctx.stroke();
+      ctx.restore();
+    }else if(state[i]===2){
+      var p2=animP(i),d=Math.min(9,cell*0.22)*(0.5+0.5*p2);
+      ctx.save();
+      ctx.shadowColor="rgba(0,0,0,0.20)";ctx.shadowBlur=cell*0.05;ctx.shadowOffsetY=cell*0.02;
+      ctx.strokeStyle=PAL.danger;ctx.lineWidth=Math.max(2,cell*0.07);ctx.lineCap="round";
+      ctx.beginPath();
+      ctx.moveTo(m.x-d,m.y-d);ctx.lineTo(m.x+d,m.y+d);
+      ctx.moveTo(m.x+d,m.y-d);ctx.lineTo(m.x-d,m.y+d);
+      ctx.stroke();ctx.restore();
+    }else{
+      /* 空边手柄：灰点 = 可点的边 */
+      ctx.save();
+      ctx.fillStyle=PAL.muted;ctx.globalAlpha=0.55;
+      ctx.beginPath();ctx.arc(m.x,m.y,Math.max(1.6,cell*0.05),0,Math.PI*2);ctx.fill();
+      ctx.restore();
     }
   }
-  // 点
-  ctx.fillStyle=PAL.dot;
-  for(var y2=0;y2<=R;y2++)for(var x2=0;x2<=C;x2++){
-    ctx.beginPath();ctx.arc(pad+x2*cell,pad+y2*cell,3.5,0,7);ctx.fill();
+  /* 6. 顶点铆点 */
+  for(y=0;y<=R;y++)for(x=0;x<=C;x++){
+    var px=pad+x*cell,py=pad+y*cell,r=Math.max(2.5,cell*0.075);
+    ctx.save();
+    ctx.shadowColor="rgba(0,0,0,0.22)";ctx.shadowBlur=cell*0.05;ctx.shadowOffsetY=cell*0.02;
+    var vg=ctx.createRadialGradient(px-r*0.3,py-r*0.35,r*0.2,px,py,r);
+    vg.addColorStop(0,colMix(PAL.muted,WHITE,0.35));vg.addColorStop(1,colShade(PAL.muted,-0.22));
+    ctx.fillStyle=vg;ctx.beginPath();ctx.arc(px,py,r,0,Math.PI*2);ctx.fill();
+    ctx.restore();
   }
+  /* 7. 选中边：品牌绿软面 + 深绿虚线 */
+  if(curEdge>=0&&!over&&state[curEdge]===0){
+    var ev2=info.edgeVerts[curEdge],ax2=pad+ev2[0]*cell,ay2=pad+ev2[1]*cell,bx2=pad+ev2[2]*cell,by2=pad+ev2[3]*cell;
+    ctx.save();
+    ctx.strokeStyle=PAL.soft;ctx.lineWidth=Math.max(4,cell*0.16);ctx.lineCap="round";ctx.globalAlpha=0.9;
+    ctx.beginPath();ctx.moveTo(ax2,ay2);ctx.lineTo(bx2,by2);ctx.stroke();
+    ctx.strokeStyle=PAL.deep;ctx.lineWidth=2;ctx.setLineDash([5,4]);
+    ctx.beginPath();ctx.moveTo(ax2,ay2);ctx.lineTo(bx2,by2);ctx.stroke();
+    ctx.restore();
+  }
+  ctx.restore();
   requestAnimationFrame(draw);
 }
 /* ---------- 输入 ---------- */
@@ -492,10 +660,18 @@ function edgeAt(px,py){
   }
   return bd<=cell*0.38?best:-1;
 }
+/* 命中换算：canvas 位图被 CSS 显示尺寸缩放（width:100% 横向拉伸）时必须按比例映射回内部坐标，
+   否则可视位置与内部坐标错位——右半部竖边点不中 / 选中相邻边 */
+function canvasPos(e){
+  var rc=cv.getBoundingClientRect();
+  var sx=cv.clientWidth>0?W/cv.clientWidth:1;
+  var sy=cv.clientHeight>0?H/cv.clientHeight:1;
+  return {x:(e.clientX-rc.left-cv.clientLeft)*sx,y:(e.clientY-rc.top-cv.clientTop)*sy};
+}
 cv.addEventListener("pointerdown",function(e){
   if(over)return;
-  var rc=cv.getBoundingClientRect();
-  var i=edgeAt(e.clientX-rc.left,e.clientY-rc.top);
+  var p=canvasPos(e);
+  var i=edgeAt(p.x,p.y);
   if(i>=0)cycleEdge(i);
   e.preventDefault();
 });
@@ -519,7 +695,8 @@ $("btnLv").addEventListener("click",function(){
   }
   $("ovTitle").textContent="选择关卡";
   $("ovDesc").textContent="通关的关卡标绿";
-  $("ovBtn").textContent="取消";
+  setOvBtn("取消","x");
+  $("overlay").classList.remove("win");
   $("overlay").classList.add("show");
 });
 $("ovBtn").addEventListener("click",function(){
@@ -559,7 +736,7 @@ window.addEventListener("keydown",function(e){
   else if(e.key==="h"||e.key==="H"){hint()}
   else if(e.key==="Tab"){e.preventDefault();curEdge=(curEdge+1+info.E)%info.E;updStats()}
 });
-function hideOverlay(){$("overlay").classList.remove("show")}
+function hideOverlay(){$("overlay").classList.remove("show");$("overlay").classList.remove("win");$("lvgrid").hidden=true}
 window.addEventListener("resize",resize);
 /* ---------- 启动 ---------- */
 function syncLevelsFromServer(){
@@ -622,6 +799,13 @@ syncLevelsFromServer();syncSaveFromServer();
     el.addEventListener("keydown",function(e){trap(el,e)});
   }
   for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+  /* 按钮图标注入：工具钮 + 覆盖层主 CTA（SW_ICON） */
+  function $(id){return document.getElementById(id)}
+  $("btnUndo").insertAdjacentHTML("afterbegin",window.SW_ICON("undo"));
+  $("btnHint").insertAdjacentHTML("afterbegin",window.SW_ICON("hint"));
+  $("btnReset").insertAdjacentHTML("afterbegin",window.SW_ICON("rotate"));
+  $("btnLv").insertAdjacentHTML("afterbegin",window.SW_ICON("grid"));
+  $("ovBtn").insertAdjacentHTML("afterbegin",window.SW_ICON("play"));
 })();
 </script>
 </body>

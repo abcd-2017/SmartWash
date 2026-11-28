@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#F5F6F3">
 <title>黑白棋</title>
 <style>
-  /*token:GAME-THEME.md §2 + §3 素材 token（棋盘毛毡 felt / 格线 line，深色压暗同色相）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-felt:#2D9B6A;--g-felt2:#1E8C5C;--g-line:#157A50;color-scheme:light }
-  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-felt:#1E4D3A;--g-felt2:#173D2D;--g-line:#0B241A;color-scheme:dark }
+  /*token:GAME-THEME.md §2 基线 + §3 素材 token（木框 frame1/2、棋身 disc-b/w、毛毡 felt/felt2、格线 line）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-felt:#2D9B6A;--g-felt2:#1E8C5C;--g-line:#0A4A30;--g-rv-frame1:#C9A468;--g-rv-frame2:#A87F3F;--g-rv-disc-b:#4E5258;--g-rv-disc-w:#FBF9F4;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-felt:#1E4D3A;--g-felt2:#173D2D;--g-line:#3E9A6E;--g-rv-frame1:#4A3F2C;--g-rv-frame2:#2C2517;--g-rv-disc-b:#4A4F56;--g-rv-disc-w:#E8E4DA;color-scheme:dark }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
   html, body { margin: 0; padding: 0; }
@@ -22,49 +22,65 @@
     touch-action: manipulation; overscroll-behavior: none;
   }
   .wrap { width: 100%; max-width: 480px; }
-  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 16px; padding: 0 2px; }
-  .sub { font-size: 14px; color: var(--g-muted); }
+  header { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 12px; padding: 0 2px; }
+  .sub { font-size: 14px; color: var(--g-muted); line-height: 1.4; }
   .stats { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; }
+  .stat { flex: 1; min-width: 0; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; animation: rise .38s ease-out both; }
+  .stat:nth-child(2) { animation-delay: 40ms; }   /* 入场错落 40ms */
+  .stat:nth-child(3) { animation-delay: 80ms; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
-  .stat .val { font-size:18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
-  .stage { position: relative; }
-  canvas { display: block; width: 100%; touch-action: none; border-radius: var(--g-radius-inner); }
-  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
-  .tools { display: flex; gap: 8px; }
+  .stat .val { display: inline-block; font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stage { position: relative; animation: fadein .3s ease-out both; animation-delay: 120ms; }
+  canvas { display: block; width: 100%; touch-action: none; border-radius: var(--g-radius-inner); box-shadow: var(--g-shadow); }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; transition: color .16s ease-out; }
+  .tools { display: flex; gap: 8px; margin-top: 8px; animation: rise .38s ease-out both; animation-delay: 200ms; }
   .btn {
     min-height: 44px; padding: 0 14px; flex: 1;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
     border: 0; border-radius: var(--g-radius-btn);
     background: var(--g-btn-primary); color: #fff;
     font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    transition: transform .14s ease-out, opacity .16s ease-out, background .16s ease-out;
   }
-  .btn:active { opacity: .85; }
+  .btn:active { transform: scale(.96); }
   .btn.ghost { background: var(--g-surface2); color: var(--g-text); }
+  .swi { display: inline-block; vertical-align: -0.14em; flex: none; }
   .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
   .overlay {
     position: fixed; inset: 0; z-index: 10;
     background: var(--g-scrim);
     display: none; align-items: center; justify-content: center; padding: 20px;
   }
-  .overlay.show { display: flex; }
+  .overlay.show { display: flex; animation: fadein .2s ease-out; }
   .panel {
     width: 100%; max-width: 320px; padding: 22px 18px;
     background: var(--g-surface); border-radius: var(--g-radius);
     box-shadow: var(--g-shadow); text-align: center;
-    animation: pop .25s ease-out;
+    animation: pop .3s ease-out;
   }
-  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
   .panel h2 { margin: 0 0 6px; font-size: 18px; }
   .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
   .panel .desc b { color: var(--g-primary-deep); font-size: 22px; }
   .panel .btn { width: 100%; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes pop { 0% { transform: scale(.9); opacity: 0; } 60% { transform: scale(1.03); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
 
-  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（同时压 animation-duration 与 animation-delay） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; animation-delay:0ms !important; transition-duration:.01ms !important} }
 
   /* P2: 键盘焦点可见（S5） */
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 </style>
+<script>
+/* 内联图标库：照抄本库 window.SW_ICON 结构（24 viewBox / currentColor / aria-hidden / 零外链） */
+window.SW_ICON=function(n,s){s=s||"";var P={
+ 'rotate':'<path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/>',
+ 'gauge':'<path d="M4 18a8 8 0 1 1 16 0"/><path d="M12 18l4.5-5.5"/>'
+};
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
+};
+</script>
 <script>
 //主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
 (function(){
@@ -89,16 +105,16 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
   <div class="stage"><canvas id="cv" aria-label="黑白棋棋盘" role="img"></canvas></div>
   <p class="msg" id="msg" role="status" aria-live="polite">轮到你落子（黑棋先行），高亮点是可行位置。</p>
   <div class="tools">
-    <button class="btn ghost" id="btnDiff">难度：困难</button>
-    <button class="btn" id="btnNew">重新开始</button>
+    <button class="btn ghost" id="btnDiff" type="button"><span id="btnDiffTxt">难度：困难</span></button>
+    <button class="btn" id="btnNew" type="button">重新开始</button>
   </div>
-  <p class="foot">无合法手时自动跳过 · 双方都无手时终局，子多者胜</p>
+  <p class="foot">白点＝可落点 · 虚线环＝对手末手 · 无合法手自动跳过，双方都无手时终局，子多者胜</p>
 </div>
 <div class="overlay" role="dialog" aria-modal="true" id="overlay">
   <div class="panel">
     <h2 id="ovTitle">游戏结束</h2>
     <p class="desc" id="ovDesc"></p>
-    <button class="btn" id="ovBtn">再来一局</button>
+    <button class="btn" id="ovBtn" type="button">再来一局</button>
   </div>
 </div>
 <script>
@@ -106,6 +122,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
 "use strict";
 /* ---------- 调色板：全部经 CSS 变量读取，JS 零颜色字面量 ---------- */
 var PAL={};
+var INK="rgb(0,0,0)",PAPER="rgb(255,255,255)";   // 恒暗 / 恒白（阴影与高光；避开棋子色 BLACK/WHITE=1/2）
 function palLoad(){
   var s=getComputedStyle(document.documentElement);
   function v(n){return s.getPropertyValue(n).trim()}
@@ -113,9 +130,26 @@ function palLoad(){
     text:v("--g-text"),muted:v("--g-muted"),faint:v("--g-faint"),
     primary:v("--g-primary"),deep:v("--g-primary-deep"),soft:v("--g-primary-soft"),
     danger:v("--g-danger"),success:v("--g-success"),warning:v("--g-warning"),
-    felt:v("--g-felt"),felt2:v("--g-felt2"),line:v("--g-line")};
+    felt:v("--g-felt"),felt2:v("--g-felt2"),line:v("--g-line"),
+    frame1:v("--g-rv-frame1"),frame2:v("--g-rv-frame2"),
+    discB:v("--g-rv-disc-b"),discW:v("--g-rv-disc-w")};
+  PAL.cellAlt=colMix(PAL.felt,PAPER,0.07);
+  PAL.gridEdge=colMix(PAL.felt2,INK,0.30);
 }
 window.__gOnTheme=function(){palLoad()};//App 推送主题时刷新调色板，rAF 循环自动重绘
+/* ---------- 颜色工具：仅由 PAL 色值混合出明暗，JS 内零颜色字面量 ---------- */
+function colParse(c){
+  c=String(c).trim();
+  if(c.charAt(0)==="#")c=c.slice(1);
+  if(c.length===3)c=c.charAt(0)+c.charAt(0)+c.charAt(1)+c.charAt(1)+c.charAt(2)+c.charAt(2);
+  if(c.length===6)return[parseInt(c.slice(0,2),16),parseInt(c.slice(2,4),16),parseInt(c.slice(4,6),16)];
+  var m=c.match(/(\d+)[,\s]+(\d+)[,\s]+(\d+)/);
+  return m?[+m[1],+m[2],+m[3]]:[0,0,0];
+}
+function colMix(a,b,t){
+  var A=colParse(a),B=colParse(b);
+  return "rgb("+Math.round(A[0]+(B[0]-A[0])*t)+","+Math.round(A[1]+(B[1]-A[1])*t)+","+Math.round(A[2]+(B[2]-A[2])*t)+")";
+}
 /* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
 var GB=(function(){
   var pending={},seq=0;
@@ -158,7 +192,8 @@ function syncSaveFromServer(){
       // 账号胜场更多才覆盖本地（难度偏好保留本地）
       if(rw>S.wins){S.wins=rw;S.losses=parseInt(r.losses,10)||0;S.draws=parseInt(r.draws,10)||0;save();updateStats();}
     }catch(e){}
-  }).catch(function(){});}
+  }).catch(function(){});
+}
 /* ---------- 规则 ---------- */
 var N=8,EMPTY=0,BLACK=1,WHITE=2;
 var DIRS=[[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
@@ -263,20 +298,22 @@ function aiMove(b,diff){
 }
 /* ---------- 状态 ---------- */
 var S=loadSave();
-var board=[],turn=BLACK,over=false,lastMove=null,anim=null,aiTimer=null,hintOn=true;
+var board=[],turn=BLACK,over=false,lastMove=null,anim=null,aiTimer=null;
 var cv=document.getElementById("cv"),ctx=cv.getContext("2d");
-var L={pad:8,cell:0,boardW:0,W:0,H:0};
+var L={pad:8,cell:0,boardW:0,W:0,H:0,wood:0,gap:0};
 function $(id){return document.getElementById(id)}
 function say(t){$("msg").textContent=t}
 /* ---------- 几何 ---------- */
 function resize(){
   var w=cv.parentElement.clientWidth||360,dpr=Math.min(window.devicePixelRatio||1,2);
-  L.W=w;L.cell=Math.floor((w-2*L.pad)/N);L.boardW=L.cell*N;
+  L.W=w;L.wood=Math.max(8,Math.round(w*0.035));L.gap=Math.max(4,Math.round(L.wood*0.5));
+  L.pad=L.wood+L.gap;L.cell=Math.floor((w-2*L.pad)/N);L.boardW=L.cell*N;
   L.H=L.pad*2+L.boardW;
   cv.style.height=L.H+"px";
   cv.width=Math.round(w*dpr);cv.height=Math.round(L.H*dpr);
   ctx.setTransform(dpr,0,0,dpr,0,0);
 }
+function cellCenter(r,c){return [L.pad+c*L.cell+L.cell/2,L.pad+r*L.cell+L.cell/2]}
 /* ---------- 回合流 ---------- */
 function newGame(){
   board=[];var r,c;
@@ -360,44 +397,96 @@ function rr(x,y,w,h,r){
   ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);
   ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();
 }
+/* 棋子：渐变棋身 + 同心轮圈 + 恒白高光 + 落地投影（轻立体） */
 function drawDisc(px,py,size,color,scaleX,alpha){
   var r=size*0.42*scaleX,cx=px+size/2,cy=py+size/2;
   if(r<=0.5)return;
-  ctx.globalAlpha=alpha===undefined?1:alpha;
-  var g=ctx.createRadialGradient(cx-r*0.35,cy-r*0.4,r*0.1,cx,cy,r);
-  if(color===BLACK){g.addColorStop(0,"#5A5D61");g.addColorStop(1,"#17181A")}//棋子素材(D2 恒暗)
-  else{g.addColorStop(0,"#FFFFFF");g.addColorStop(1,"#D8DBD8")}
-  ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);
-  ctx.fillStyle=g;ctx.fill();
+  var a=alpha===undefined?1:alpha;
+  ctx.globalAlpha=a;
+  ctx.save();
+  ctx.shadowColor="rgba(0,0,0,0.38)";ctx.shadowBlur=size*0.10;ctx.shadowOffsetY=size*0.05;
+  var g=ctx.createRadialGradient(cx-r*0.34,cy-r*0.40,r*0.08,cx,cy,r);
+  if(color===BLACK){g.addColorStop(0,PAL.discB);g.addColorStop(1,colMix(PAL.discB,INK,0.62))}
+  else{g.addColorStop(0,PAL.discW);g.addColorStop(1,colMix(PAL.discW,INK,0.16))}
+  ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+  ctx.lineWidth=Math.max(1,r*0.10);
+  ctx.strokeStyle=color===BLACK?colMix(PAL.discB,PAPER,0.20):colMix(PAL.discW,INK,0.30);
+  ctx.beginPath();ctx.arc(cx,cy,r*0.94,0,Math.PI*2);ctx.stroke();
+  ctx.lineWidth=Math.max(1,r*0.05);
+  ctx.strokeStyle=color===BLACK?"rgba(255,255,255,0.12)":"rgba(0,0,0,0.10)";
+  ctx.beginPath();ctx.arc(cx,cy,r*0.70,0,Math.PI*2);ctx.stroke();
+  ctx.globalAlpha=a*(color===BLACK?0.22:0.6);
+  ctx.fillStyle=PAPER;
+  ctx.beginPath();ctx.ellipse(cx-r*0.32,cy-r*0.38,r*0.26,r*0.15,-0.55,0,Math.PI*2);ctx.fill();
   ctx.globalAlpha=1;
+}
+function ring(r,c,rad,color,lw,dash,alpha){
+  var p=cellCenter(r,c);
+  ctx.save();
+  if(dash)ctx.setLineDash(dash);
+  ctx.globalAlpha=alpha;ctx.strokeStyle=color;ctx.lineWidth=lw;
+  ctx.beginPath();ctx.arc(p[0],p[1],rad,0,Math.PI*2);ctx.stroke();
+  ctx.restore();
 }
 function draw(){
   var r,c;
   ctx.fillStyle=PAL.bg;ctx.fillRect(0,0,L.W,L.H);
-  /* 棋盘毛毡 */
-  rr(L.pad-4,L.pad-4,L.boardW+8,L.boardW+8,12);
-  var g=ctx.createLinearGradient(0,L.pad,0,L.pad+L.boardW);
+  /* 木框（外框「面」+ 顶光 + 投影） */
+  ctx.save();
+  ctx.shadowColor="rgba(0,0,0,0.28)";ctx.shadowBlur=L.wood*0.9;ctx.shadowOffsetY=L.wood*0.35;
+  var gf=ctx.createLinearGradient(0,0,0,L.H);
+  gf.addColorStop(0,PAL.frame1);gf.addColorStop(1,PAL.frame2);
+  ctx.fillStyle=gf;rr(0.5,0.5,L.W-1,L.H-1,Math.min(12,L.W*0.035));ctx.fill();
+  ctx.restore();
+  ctx.lineWidth=Math.max(1,L.wood*0.14);ctx.strokeStyle=colMix(PAL.frame1,PAPER,0.30);
+  rr(1.5,1.5,L.W-3,L.H-3,Math.min(11,L.W*0.032));ctx.stroke();
+  /* 毡面（地面）+ 顶光 */
+  var g=ctx.createLinearGradient(0,L.wood,0,L.H-L.wood);
   g.addColorStop(0,PAL.felt);g.addColorStop(1,PAL.felt2);
-  ctx.fillStyle=g;ctx.fill();
-  /* 格线 */
-  ctx.strokeStyle=PAL.line;ctx.lineWidth=1;
-  for(r=0;r<=N;r++){
-    ctx.beginPath();ctx.moveTo(L.pad+r*L.cell,L.pad);ctx.lineTo(L.pad+r*L.cell,L.pad+L.boardW);ctx.stroke();
-    ctx.beginPath();ctx.moveTo(L.pad,L.pad+r*L.cell);ctx.lineTo(L.pad+L.boardW,L.pad+r*L.cell);ctx.stroke();
+  ctx.fillStyle=g;rr(L.wood,L.wood,L.W-2*L.wood,L.H-2*L.wood,Math.min(10,L.wood*0.7));ctx.fill();
+  var gl=ctx.createRadialGradient(L.W/2,L.wood,L.W*0.05,L.W/2,L.wood,L.W*0.72);
+  gl.addColorStop(0,"rgba(255,255,255,0.16)");gl.addColorStop(1,"rgba(255,255,255,0)");
+  ctx.fillStyle=gl;ctx.fillRect(0,0,L.W,L.H);
+  /* 格内底：棋盘格交替，强化「地面」层次 */
+  ctx.fillStyle=PAL.cellAlt;
+  for(r=0;r<N;r++)for(c=0;c<N;c++){
+    if((r+c)%2===0)ctx.fillRect(L.pad+c*L.cell,L.pad+r*L.cell,L.cell,L.cell);
   }
-  /* 可行位置高亮（仅人类回合） */
+  /* 边线：格线 + 外框线 */
+  ctx.strokeStyle=PAL.line;ctx.lineWidth=Math.max(1,Math.round(L.cell*0.032));
+  ctx.beginPath();
+  for(r=0;r<=N;r++){
+    ctx.moveTo(L.pad+r*L.cell,L.pad);ctx.lineTo(L.pad+r*L.cell,L.pad+L.boardW);
+    ctx.moveTo(L.pad,L.pad+r*L.cell);ctx.lineTo(L.pad+L.boardW,L.pad+r*L.cell);
+  }
+  ctx.stroke();
+  ctx.lineWidth=Math.max(1.5,Math.round(L.cell*0.05));
+  ctx.strokeStyle=PAL.gridEdge;
+  ctx.strokeRect(L.pad,L.pad,L.boardW,L.boardW);
   var now=performance.now();
-  var animK=(anim&&!window.__gRM)?Math.min(1,(now-anim.t)/220):1;
+  var animK=(anim&&!window.__gRM)?Math.min(1,(now-anim.t)/200):1;
+  /* 可落点：珍珠点 +  soft 环（仅人类回合） */
   if(!over&&turn===BLACK&&!anim){
-    var moves=movesOf(board,BLACK);
-    ctx.globalAlpha=.5;
-    for(var i=0;i<moves.length;i++){
-      var m=moves[i];
-      ctx.beginPath();
-      ctx.arc(L.pad+m.c*L.cell+L.cell/2,L.pad+m.r*L.cell+L.cell/2,Math.max(2.5,L.cell*0.11),0,Math.PI*2);
-      ctx.fillStyle=PAL.surface;ctx.fill();
+    var moves=movesOf(board,BLACK),i;
+    for(i=0;i<moves.length;i++){
+      var p=moves[i].r,q=moves[i].c,cc=cellCenter(p,q);
+      var pulse=window.__gRM?0.9:0.74+0.20*Math.sin(now/420+i*0.9);
+      ctx.globalAlpha=pulse;ctx.fillStyle=PAPER;
+      ctx.beginPath();ctx.arc(cc[0],cc[1],Math.max(3,L.cell*0.13),0,Math.PI*2);ctx.fill();
+      ctx.globalAlpha=1;
+      ctx.lineWidth=Math.max(1.5,L.cell*0.045);ctx.strokeStyle=PAPER;ctx.globalAlpha=0.55;
+      ctx.beginPath();ctx.arc(cc[0],cc[1],Math.max(4.5,L.cell*0.19),0,Math.PI*2);ctx.stroke();
+      ctx.globalAlpha=1;
     }
-    ctx.globalAlpha=1;
+  }
+  /* 末手：虚线环（目标提示） */
+  if(lastMove&&!anim)ring(lastMove.r,lastMove.c,L.cell*0.46,PAPER,Math.max(2,L.cell*0.055),[Math.max(3,L.cell*0.10),Math.max(2,L.cell*0.07)],0.9);
+  /* 落子 / 翻面：实线环（选中与目标） */
+  if(anim){
+    ring(anim.cell.r,anim.cell.c,L.cell*0.47,PAPER,Math.max(2,L.cell*0.06),null,0.9);
+    var k;
+    for(k=0;k<anim.flips.length;k++)ring(anim.flips[k][0],anim.flips[k][1],L.cell*0.47,PAPER,Math.max(1.5,L.cell*0.045),null,0.5);
   }
   /* 棋子 */
   var flipSet={};
@@ -407,7 +496,7 @@ function draw(){
     var px=L.pad+c*L.cell,py=L.pad+r*L.cell;
     var scaleX=1;
     if(anim){
-      if(anim.cell.r===r&&anim.cell.c===c){scaleX=Math.min(1,animK)}
+      if(anim.cell.r===r&&anim.cell.c===c){scaleX=1-Math.pow(1-animK,2)}
       else if(flipSet[r+"_"+c]){
         /* 翻面：前半段原色缩小，后半段新色放大 */
         var half=animK<0.5;
@@ -417,13 +506,6 @@ function draw(){
     }
     drawDisc(px,py,L.cell,v,scaleX,1);
   }
-  /* 末手标记 */
-  if(lastMove&&!anim){
-    ctx.strokeStyle=PAL.danger;ctx.lineWidth=2;
-    ctx.beginPath();
-    ctx.arc(L.pad+lastMove.c*L.cell+L.cell/2,L.pad+lastMove.r*L.cell+L.cell/2,L.cell*0.14,0,Math.PI*2);
-    ctx.stroke();
-  }
   if(anim&&animK>=1)anim=null;
 }
 /* ---------- 交互 ---------- */
@@ -432,7 +514,8 @@ cv.addEventListener("pointerdown",function(e){
   var rect=cv.getBoundingClientRect();
   var x=e.clientX-rect.left,y=e.clientY-rect.top;
   var c=Math.floor((x-L.pad)/L.cell),r=Math.floor((y-L.pad)/L.cell);
-  if(inb(r,c))humanMove(r,c);
+  if(!inb(r,c))return;
+  humanMove(r,c);
 });
 /* ---------- 主循环 ---------- */
 function loop(){draw();requestAnimationFrame(loop)}
@@ -440,46 +523,51 @@ $("btnNew").addEventListener("click",newGame);
 $("ovBtn").addEventListener("click",newGame);
 $("btnDiff").addEventListener("click",function(){
   S.diff=S.diff==="hard"?"easy":"hard";save();
-  this.textContent="难度："+(S.diff==="hard"?"困难":"简单");
+  $("btnDiffTxt").textContent="难度："+(S.diff==="hard"?"困难":"简单");
   say(S.diff==="hard"?"已切到困难：电脑会认真算 3 步。":"已切到简单：电脑会适当放水。");
 });
 window.addEventListener("resize",resize);
-$("btnDiff").textContent="难度："+(S.diff==="hard"?"困难":"简单");
+$("btnDiffTxt").textContent="难度："+(S.diff==="hard"?"困难":"简单");
 palLoad();resize();newGame();loop();
 syncSaveFromServer();
 })();
 </script>
 <script>
-/* 覆盖层焦点管理（dialog 语义配套）：显示时记录触发元素并聚焦首个可操作项；Tab 在层内循环；隐藏后归还焦点 */
+/* 覆盖层焦点管理（dialog 语义配套）+ 按钮图标注入（内联 SVG，零外链；文字走 span，不抹图标） */
 (function(){
   var els=document.querySelectorAll(".overlay, .sheet");
-  if(!els.length)return;
-  function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
-  var lastFocus=null;
-  function focusFirst(el){
-    if(el.dataset.foc)return;el.dataset.foc="1";
-    if(!lastFocus)lastFocus=document.activeElement;
-    var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+  if(els.length){
+    function shown(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length)}
+    var lastFocus=null;
+    function focusFirst(el){
+      if(el.dataset.foc)return;el.dataset.foc="1";
+      if(!lastFocus)lastFocus=document.activeElement;
+      var t=el.querySelector("button,input,select,textarea,[tabindex]");if(t)t.focus();
+    }
+    function restore(el){
+      if(!el.dataset.foc)return;delete el.dataset.foc;
+      if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
+    }
+    function trap(el,e){
+      if(e.key!=="Tab")return;
+      var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
+      if(!f.length)return;
+      var first=f[0],last=f[f.length-1];
+      if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
+      else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
+    }
+    function watch(el){
+      try{new MutationObserver(function(){
+        if(shown(el))focusFirst(el);else restore(el);
+      }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
+      el.addEventListener("keydown",function(e){trap(el,e)});
+    }
+    for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
   }
-  function restore(el){
-    if(!el.dataset.foc)return;delete el.dataset.foc;
-    if(lastFocus&&document.contains(lastFocus)){lastFocus.focus();lastFocus=null;}
-  }
-  function trap(el,e){
-    if(e.key!=="Tab")return;
-    var f=el.querySelectorAll("button,input,select,textarea,[tabindex]");
-    if(!f.length)return;
-    var first=f[0],last=f[f.length-1];
-    if(e.shiftKey&&document.activeElement===first){last.focus();e.preventDefault();}
-    else if(!e.shiftKey&&document.activeElement===last){first.focus();e.preventDefault();}
-  }
-  function watch(el){
-    try{new MutationObserver(function(){
-      if(shown(el))focusFirst(el);else restore(el);
-    }).observe(el,{attributes:true,attributeFilter:["class","style","hidden"]})}catch(e){}
-    el.addEventListener("keydown",function(e){trap(el,e)});
-  }
-  for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+  function $(id){return document.getElementById(id)}
+  $("btnDiff").insertAdjacentHTML("afterbegin",window.SW_ICON("gauge"));
+  $("btnNew").insertAdjacentHTML("afterbegin",window.SW_ICON("rotate"));
+  $("ovBtn").insertAdjacentHTML("afterbegin",window.SW_ICON("rotate"));
 })();
 </script>
 </body>

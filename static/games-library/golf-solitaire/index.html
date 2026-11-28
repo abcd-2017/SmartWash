@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#F5F6F3">
 <title>高尔夫纸牌</title>
 <style>
-  /*token:GAME-THEME.md §2 基线（按需取用，值与基线一致）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light }
-  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
+  /*token:GAME-THEME.md §2 基线 + §3 素材 token（牌面 / 牌堆牌背 / 球道毡面 / 球洞旗金）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gs-face1:#FFFFFF;--g-gs-face2:#EDF4EF;--g-gs-back1:#1E8C5C;--g-gs-back2:#0B4A30;--g-gs-felt1:#1E6B4A;--g-gs-felt2:#175A3D;--g-gs-flag:#D98A26;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-gs-face1:#262B27;--g-gs-face2:#1A1E1B;--g-gs-back1:#3F6B55;--g-gs-back2:#22382D;--g-gs-felt1:#123A2C;--g-gs-felt2:#0D2A20;--g-gs-flag:#E2A44E;color-scheme:dark }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
   html, body { margin: 0; padding: 0; }
@@ -27,42 +27,111 @@
   .stats { display: flex; gap: 8px; margin-bottom: 10px; }
   .stat { flex: 1; min-width: 0; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
-  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val { display: inline-block; font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
   .stat .val.plain { color: var(--g-text); }
+  /* 数据变化轻弹：只有真变化时由 JS 挂 .bump */
+  .val.bump { animation: valPop .3s ease-out; }
+  @keyframes valPop { 0% { transform: scale(1); } 40% { transform: scale(1.16); } 100% { transform: scale(1); } }
+  .swi { display: inline-block; vertical-align: -0.14em; flex: none; }
   .btn {
-    min-height: 44px; padding: 0 12px; flex: 1; border: 0; border-radius: var(--g-radius-btn);
+    min-height: 44px; padding: 0 12px; flex: 1;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    border: 0; border-radius: var(--g-radius-btn);
     background: var(--g-surface2); color: var(--g-text);
     font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    transition: transform .12s ease-out, opacity .16s ease-out, background .16s ease-out;
   }
   .btn.primary { background: var(--g-btn-primary); color: #fff; }
-  .btn:active { opacity: .85; }
+  .btn:active { transform: scale(.96); }
   .btn:disabled { opacity: .35; }
-  .board { background: var(--g-surface); border-radius: var(--g-radius); box-shadow: var(--g-shadow); padding: 8px 6px 12px; }
-  .fndrow { display: flex; gap: 10px; margin: 4px 8px 12px; align-items: stretch; }
+  .tools .btn .swi { font-size: 18px; }
+  /* 牌桌：表面卡 + 球道毡面「面」（深绿渐变 + 顶光 + 内凹），列牌落在毡面上 */
+  .board { background: var(--g-surface); border-radius: var(--g-radius); box-shadow: var(--g-shadow); padding: 10px 8px 12px; }
+  .fndrow { display: flex; gap: 10px; margin: 2px 4px 10px; align-items: stretch; }
   .bigpile {
     position: relative; width: 20%; aspect-ratio: 5 / 7; border-radius: 10px;
     border: 1px dashed var(--g-border); background: var(--g-surface2);
     font-family: inherit; padding: 0; cursor: pointer; color: var(--g-text);
+    transition: transform .16s ease-out, box-shadow .16s ease-out, border-color .16s ease-out;
   }
-  .bigpile.solid { background: var(--g-primary-soft); border-style: solid; }
-  .bigpile .top { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 12px; color: var(--g-muted); line-height: 1.4; }
-  .bigpile .top b { font-size: 28px; line-height: 1.2; }
+  .bigpile:active { transform: scale(.96); }
+  .bigpile .top { position: absolute; inset: 0; z-index: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; font-size: 12px; color: var(--g-muted); line-height: 1.3; }
+  .bigpile .top b { font-size: 28px; line-height: 1.1; font-weight: 700; }
+  .bigpile .top .swi { font-size: 18px; }
+  /* 基牌（目标位）：牌面材质 + 球洞金环 */
+  #baseBtn {
+    background: linear-gradient(165deg, var(--g-gs-face1), var(--g-gs-face2));
+    border: 1px solid var(--g-border);
+    box-shadow: 0 0 0 2px var(--g-gs-flag), 0 8px 16px rgba(20,40,30,.18);
+  }
+  #baseBtn::before { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+    background: radial-gradient(85% 55% at 26% 10%, rgba(255,255,255,.34), rgba(255,255,255,0) 62%); }
+  #baseBtn .flag { position: absolute; top: 4px; right: 5px; font-size: 12px; line-height: 1; color: var(--g-gs-flag); }
+  /* 牌堆：牌背材质（品牌绿渐变 + 高光 + 斜纹 + 花色水印），与牌面形成材质对比 */
+  #stockBtn {
+    border: 1px solid rgba(255,255,255,.28);
+    background:
+      radial-gradient(120% 90% at 50% 0%, rgba(255,255,255,.24), rgba(255,255,255,0) 58%),
+      repeating-linear-gradient(45deg, rgba(255,255,255,.07) 0 5px, rgba(255,255,255,0) 5px 10px),
+      linear-gradient(160deg, var(--g-gs-back1), var(--g-gs-back2));
+    box-shadow: var(--g-shadow);
+    color: #fff;
+  }
+  #stockBtn .top { color: #fff; }
+  #stockBtn .wm { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #fff; opacity: .26; font-size: 28px; }
+  #stockBtn.empty { border: 1px dashed var(--g-border); background: var(--g-surface2); box-shadow: none; color: var(--g-muted); }
+  /* 耗尽态：白字是给牌背的，空态必须回到 muted（浅 4.51:1 / 深 6.46:1，均 ≥4.5） */
+  #stockBtn.empty .top { color: var(--g-muted); }
+  #stockBtn.empty .wm { display: none; }
   .fndtip { flex: 1; display: flex; flex-direction: column; justify-content: center; font-size: 12px; color: var(--g-muted); line-height: 1.6; min-width: 0; }
+  /* 球道毡面：铺面「面」不用细线，列间凹槽区分地面 */
+  .felt {
+    border-radius: var(--g-radius-inner); padding: 8px 4px 10px;
+    background: var(--g-gs-felt2);
+    background-image:
+      linear-gradient(180deg, var(--g-gs-felt1), var(--g-gs-felt2)),
+      radial-gradient(120% 120% at 50% 0%, rgba(255,255,255,.16), rgba(255,255,255,0));
+    box-shadow: inset 0 2px 10px rgba(0,0,0,.24);
+  }
   .cols { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; padding: 0 2px; }
   .col { position: relative; min-height: 96px; }
-  .col .ph { position: absolute; inset: 0; border-radius: 10px; border: 1px dashed var(--g-border); background: var(--g-surface2); color: var(--g-muted); font-size: 12px; display: flex; align-items: center; justify-content: center; }
+  .col .ph {
+    position: absolute; inset: 0; border-radius: 10px;
+    border: 1px solid rgba(255,255,255,.16);
+    background: rgba(0,0,0,.18);
+    box-shadow: inset 0 2px 6px rgba(0,0,0,.30);
+    color: rgba(255,255,255,.78); font-size: 12px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  /* 牌面：渐变 + 高光 + 投影的轻立体（--i 叠放序 / --d 发牌序） */
   .card {
     position: absolute; left: 0; width: 100%; aspect-ratio: 5 / 7;
     top: calc(var(--i) * var(--step, 16px));
-    border-radius: 10px; background: var(--g-surface); border: 1px solid var(--g-border);
-    box-shadow: var(--g-shadow); color: var(--g-text); cursor: pointer;
+    border-radius: 10px;
+    background: linear-gradient(165deg, var(--g-gs-face1), var(--g-gs-face2));
+    border: 1px solid var(--g-border);
+    box-shadow: 0 1px 2px rgba(20,40,30,.10), 0 4px 10px rgba(20,40,30,.16);
+    color: var(--g-text); cursor: pointer;
     font-family: inherit; padding: 0; text-align: left;
+    transition: transform .16s ease-out, box-shadow .16s ease-out, border-color .16s ease-out;
   }
+  .card::before { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+    background: radial-gradient(85% 55% at 26% 10%, rgba(255,255,255,.34), rgba(255,255,255,0) 62%); }
   .card.red { color: var(--g-danger); }
-  .card.playable { border-color: var(--g-primary); }
+  /* 可收：品牌绿环 + 浮起 + 投影（状态变化走过渡） */
+  .card.playable {
+    border-color: var(--g-primary);
+    box-shadow: 0 0 0 2px var(--g-primary), 0 8px 16px rgba(20,40,30,.24);
+    transform: translateY(-2px);
+  }
+  .card:active { transform: scale(.96); }
+  /* 入场错落：逐张发牌，40ms 间隔（--d 由 JS 写入） */
+  .cols.entering .card { animation: deal .34s cubic-bezier(.2,.7,.3,1) both; animation-delay: calc(var(--d, 0) * 40ms); }
+  @keyframes deal { from { opacity: 0; transform: translateY(-10px) scale(.94); } to { opacity: 1; transform: none; } }
   .card .rk { position: absolute; top: 2px; left: 4px; font-size: 12px; font-weight: 700; line-height: 1.2; }
   .card .st { position: absolute; top: 16px; left: 4px; font-size: 12px; line-height: 1; }
-  .card .cen { position: absolute; right: 4px; bottom: 2px; font-size: 16px; line-height: 1; opacity: .8; }
+  .card .cen { position: absolute; right: 4px; bottom: 2px; font-size: 16px; line-height: 1; opacity: .85; }
+  .card .swi { display: block; }
   .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; font-weight: 500; color: var(--g-muted); text-align: center; }
   .msg.err { color: var(--g-danger); }
   .msg.win { color: var(--g-success); }
@@ -81,6 +150,9 @@
     animation: pop .25s ease-out;
   }
   @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  /* 过关反馈：轻微弹跳（失败/选关不挂 .win，保持克制） */
+  .panel.win { animation: winpop .45s cubic-bezier(.18,.9,.3,1.4); }
+  @keyframes winpop { 0% { transform: scale(.86); opacity: 0; } 62% { transform: scale(1.045); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
   .panel h2 { margin: 0 0 6px; font-size: 18px; }
   .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.7; }
   .panel .desc b { color: var(--g-primary-deep); }
@@ -91,15 +163,38 @@
     min-height: 44px; border: 0; border-radius: var(--g-radius-inner);
     background: var(--g-surface2); color: var(--g-text);
     font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer;
+    transition: transform .12s ease-out, background .16s ease-out;
   }
+  .lvbtn:active { transform: scale(.96); }
   .lvbtn[disabled] { opacity: .35; }
   .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
   .tools { display: flex; gap: 8px; margin-bottom: 10px; }
-  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（§6.1 模板） */
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（§6.1 模板 + 延迟归零，避免入场卡在透明态） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; animation-delay:0ms !important; transition-duration:.01ms !important} }
   /* P2: 键盘焦点可见（S5） */
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 </style>
+<script>
+/* SW 图标库：内联 SVG（24 viewBox / currentColor / aria-hidden），照抄本库 window.SW_ICON（pyramid-sol 同构）；花色红=--g-danger、黑=--g-text */
+window.SW_ICON=function(n,s){s=s||"";var P={
+ 'arrow-right':'<path d="M5 12h14M13 6l6 6-6 6"/>',
+ 'rotate':'<path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/>',
+ 'undo':'<path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/>',
+ 'reset':'<path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/>',
+ 'hint':'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.8.8 1 1.6 1 2.5h6c0-.9.2-1.7 1-2.5A6 6 0 0 0 12 3z"/>',
+ 'grid':'<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>',
+ 'x':'<path d="M6 6l12 12M18 6L6 18"/>',
+ 'flag':'<path d="M6 21V4m0 0h11l-3 4.5L18 13H6"/>',
+ 'spade':'<path d="M12 3c3 4 6 6.5 6 10a3.5 3.5 0 0 1-6 2.4V19h-2v-3.6A3.5 3.5 0 0 1 6 13c0-3.5 3-6 6-10z"/>',
+ 'heart':'<path d="M12 21C7 16.5 3 13 3 9.3 3 6.4 5.2 4.5 7.7 4.5c1.7 0 3.3.9 4.3 2.4 1-1.5 2.6-2.4 4.3-2.4 2.5 0 4.7 1.9 4.7 4.8 0 3.7-4 7.2-9 11.7z"/>',
+ 'diamond':'<path d="M12 2l7 10-7 10-7-10z"/>',
+ 'club':'<path d="M12 2a4 4 0 0 1 4 4 4 4 0 0 1-1 7.9V17h3v2H6v-2h3v-3.1A4 4 0 0 1 8 6a4 4 0 0 1 4-4z"/>'
+};
+var fill={ 'flag':1,'spade':1,'heart':1,'diamond':1,'club':1 };
+var solid={ 'spade':1,'heart':1,'diamond':1,'club':1 };
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="'+(solid[n]?'none':'currentColor')+'" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
+};
+</script>
 <script>
 //主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
 (function(){
@@ -125,11 +220,11 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
   </div>
   <div class="board">
     <div class="fndrow">
-      <button class="bigpile solid" id="baseBtn" aria-label="基础堆当前基牌"><span class="top" id="baseTop"></span></button>
-      <button class="bigpile" id="stockBtn" aria-label="牌堆：换基牌"><span class="top" id="stockTop"></span></button>
+      <button class="bigpile" id="baseBtn" aria-label="基础堆当前基牌"><span class="top" id="baseTop"></span><span class="flag" id="baseFlag" aria-hidden="true"></span></button>
+      <button class="bigpile" id="stockBtn" aria-label="牌堆：换基牌"><span class="wm" id="stockWm" aria-hidden="true"></span><span class="top" id="stockTop"></span></button>
       <div class="fndtip">点列顶牌收进基础堆（点数须为基牌 ±1，K-A 环绕）；收下的牌成为新基牌。无牌可收时点牌堆换基牌，七列全收空即胜。</div>
     </div>
-    <div class="cols" id="cols"></div>
+    <div class="felt"><div class="cols" id="cols"></div></div>
   </div>
   <p class="msg" id="msg" role="status" aria-live="polite">点可收的列顶牌（绿色描边），或点牌堆换基牌</p>
   <div class="tools">
@@ -141,7 +236,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
   <p class="foot">键盘：1-7 收对应列顶牌 · D 换基牌 · U 撤销 · H 提示 · R 重开 · 40 关递进 · 进度自动保存</p>
 </div>
 <div class="overlay" role="dialog" aria-modal="true" id="overlay">
-  <div class="panel">
+  <div class="panel" id="panel">
     <h2 id="ovTitle">过关！</h2>
     <p class="desc" id="ovDesc"></p>
     <div class="lvgrid" id="lvgrid" hidden></div>
@@ -250,31 +345,34 @@ function golfDeal(seed){
   for(i=0;i<28;i++)cols[i%7].push(d[i]);
   return {cols:cols,stock:d.slice(28)};
 }
-/* 状态=(7 列剩余深度, 已翻张数 sp)；基底=stock[sp-1]。收牌：列顶 rank=基底±1（模 13 环绕） */
-function golfSolve(cols,stock,cap){
+/* 状态=(7 列剩余深度, 已翻张数 sp, 基牌 rank)，与 doTake/doDraw 同构：收牌后基牌=被收牌，翻牌后基牌=stock[sp-1] */
+function golfSolve(cols,stock,cap,st){
   var seen=new Set(),nodes=0,hitCap=false;
+  var dep0=st?st.dep:cols.map(function(a){return a.length});
+  var sp0=st?st.sp:1;
+  var base0=st?st.base:stock[0]>>2;
   function canTake(r,base){var lo=(base+12)%13,hi=(base+1)%13;return r===lo||r===hi;}
-  function dfs(dep,sp,acts){
+  function dfs(dep,sp,base,acts){
     var allEmpty=true,c;
     for(c=0;c<7;c++)if(dep[c]){allEmpty=false;break;}
     if(allEmpty)return acts;
     if(nodes++>cap){hitCap=true;return null;}
-    var k=dep.join("")+","+sp;
+    var k=dep.join("")+","+sp+","+base;
     if(seen.has(k))return null;
     seen.add(k);
-    var base=stock[sp-1]>>2;
     for(c=0;c<7;c++){
       if(!dep[c])continue;
-      if(canTake(cols[c][dep[c]-1]>>2,base)){
+      var code=cols[c][dep[c]-1];
+      if(canTake(code>>2,base)){
         var nd=dep.slice();nd[c]--;
-        var res=dfs(nd,sp,acts.concat([{t:"take",c:c}]));
+        var res=dfs(nd,sp,code>>2,acts.concat([{t:"take",c:c}]));
         if(res)return res;
       }
     }
-    if(sp<stock.length)return dfs(dep,sp+1,acts.concat([{t:"draw"}]));
+    if(sp<stock.length)return dfs(dep,sp+1,stock[sp]>>2,acts.concat([{t:"draw"}]));
     return null;
   }
-  var res=dfs(cols.map(function(a){return a.length}),1,[]);
+  var res=dfs(dep0,sp0,base0,[]);
   return res?{solved:true,acts:res}:{solved:false,cap:hitCap};
 }
 function verifyLevelData(d){
@@ -315,13 +413,16 @@ function syncSaveFromServer(){
 
 /* ---------- 牌桌状态 ---------- */
 var RANKS=["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
-var SUITS=["\u2660","\u2665","\u2666","\u2663"];
+var SUITS=["\u2660","\u2665","\u2666","\u2663"]; /* 文本牌名（aria-label/提示语）用；牌面图形走 SW_ICON */
+var SUIT_NAMES=["spade","heart","diamond","club"]; /* 与 SUITS 同序，映射 SW_ICON 花色路径 */
 var RED=[false,true,true,false];
 var lv=0,L=null,cols=[],stock=[],dep=[],sp=1,base=0,baseCode=0;
 var moves=0,hist=[],won=false,lost=false,hintCol=-1;
 function $(id){return document.getElementById(id)}
 function say(t,cls){var m=$("msg");m.textContent=t;m.className="msg"+(cls?" "+cls:"")}
 function cardName(c){return SUITS[c&3]+RANKS[c>>2]}
+/* 覆盖层主按钮：文字前带内联 SVG 图标（aria-hidden 由 SW_ICON 保证） */
+function ovBtnLabel(icon,label){$("ovBtn").innerHTML=SW_ICON(icon)+label;}
 function colTop(c){return dep[c]>0?cols[c][dep[c]-1]:-1}
 function canTake(r,b){var lo=(b+12)%13,hi=(b+1)%13;return r===lo||r===hi}
 function loadLevel(n){
@@ -336,7 +437,8 @@ function loadLevel(n){
   $("lvTag").textContent="第 "+(lv+1)+" 关 · "+L.name;
   $("stPar").textContent=L.par>0?L.par:"-";
   say("点可收的列顶牌（绿色描边），或点牌堆换基牌");
-  updStats();render();
+  $("panel").classList.remove("win");
+  updStats();render();playDeal();
 }
 function snapshot(){return{dep:dep.slice(),sp:sp,baseCode:baseCode}}
 function doTake(c){
@@ -366,8 +468,8 @@ function anyTake(){
 }
 function hint(){
   if(won||lost)return;
-  var g={cols:cols,stock:stock};
-  var r=golfSolve(cols,stock,200000);
+  /* 从当前状态求解（dep/sp/base），否则第二步起给的是开局首步，可能不合法 */
+  var r=golfSolve(cols,stock,200000,{dep:dep,sp:sp,base:base});
   if(!r.solved){say("求解器未找到取胜路线，建议撤销几步","err");return;}
   if(!r.acts.length){say("七列已收空","win");return;}
   var a=r.acts[0];
@@ -386,32 +488,38 @@ function checkEnd(){
     if(GB.available)GB.reportScore(GAME_KEY,{metricValue:lv+1,metricExtra:moves}).catch(function(){});
     $("ovTitle").textContent=(lv>=ACTIVE.length-1)?"全部通关！":"过关！";
     $("ovDesc").innerHTML="28 张全部收空！步数 <b>"+moves+"</b>（参考 "+$("stPar").textContent+"）"+(lv<ACTIVE.length-1?"<br>已解锁第 "+(lv+2)+" 关":"<br>40 关全部完成");
-    $("ovBtn").textContent=(lv>=ACTIVE.length-1)?"回到第 1 关":"下一关";
+    ovBtnLabel((lv>=ACTIVE.length-1)?"rotate":"arrow-right",(lv>=ACTIVE.length-1)?"回到第 1 关":"下一关");
     $("ovStay").hidden=true;
+    $("panel").classList.add("win");
+    $("lvgrid").hidden=true;   // 选关浮层不许带进过关遮罩
     $("overlay").classList.add("show");
   } else if(anyTake()<0&&sp>=stock.length){
     lost=true;
     var left=dep.reduce(function(a,b){return a+b},0);
     $("ovTitle").textContent="无路可走了";
     $("ovDesc").innerHTML="牌堆用尽且没有可收的列顶牌，还剩 <b>"+left+"</b> 张。撤销几步换个顺序，或重开本关。";
-    $("ovBtn").textContent="重开本关";
+    ovBtnLabel("reset","重开本关");
     $("ovStay").hidden=false;
+    $("panel").classList.remove("win");
+    $("lvgrid").hidden=true;   // 选关浮层不许带进失败遮罩
     $("overlay").classList.add("show");
   }
 }
+/* 数据变化轻弹：值变化时才挂 .bump */
+function bumpVal(id,v){var e=$(id),t=String(v);if(e.textContent===t)return;e.textContent=t;e.classList.remove("bump");void e.offsetWidth;e.classList.add("bump");}
 function updStats(){
-  $("stOff").textContent=(28-dep.reduce(function(a,b){return a+b},0))+"/28";
-  $("stMoves").textContent=moves;
+  bumpVal("stOff",(28-dep.reduce(function(a,b){return a+b},0))+"/28");
+  bumpVal("stMoves",moves);
   $("btnUndo").disabled=!hist.length||won;
 }
 /* ---------- 渲染 ---------- */
-function cardHtml(c,i,col,playable){
-  var red=RED[c&3];
-  return '<button class="card'+(red?" red":"")+(playable?" playable":"")+'" data-col="'+col+'" style="--i:'+i+'" aria-label="'+cardName(c)+'">'
-    +'<span class="rk">'+RANKS[c>>2]+'</span><span class="st">'+SUITS[c&3]+'</span><span class="cen">'+SUITS[c&3]+'</span></button>';
+function cardHtml(c,i,d,col,playable){
+  var red=RED[c&3],suitSvg=SW_ICON(SUIT_NAMES[c&3]);
+  return '<button class="card'+(red?" red":"")+(playable?" playable":"")+'" data-col="'+col+'" style="--i:'+i+';--d:'+d+'" aria-label="'+cardName(c)+'">'
+    +'<span class="rk">'+RANKS[c>>2]+'</span><span class="st">'+suitSvg+'</span><span class="cen">'+suitSvg+'</span></button>';
 }
 function render(){
-  var maxN=1,c,h="",i;
+  var maxN=1,c,h="",i,d=0;
   for(c=0;c<7;c++)maxN=Math.max(maxN,dep[c]);
   var avail=$("cols").clientWidth||347;
   var cw=(avail-24)/7;
@@ -422,15 +530,26 @@ function render(){
     for(i=0;i<dep[c];i++){
       var top=i===dep[c]-1;
       var play=top&&!lost&&canTake(cols[c][i]>>2,base);
-      inner+=cardHtml(cols[c][i],i,c,play);
+      inner+=cardHtml(cols[c][i],i,d,c,play);d++;
     }
     h+='<div class="col" data-colall="'+c+'" style="--step:'+st+'px">'+inner+'</div>';
   }
   $("cols").innerHTML=h;
   var bc=$("baseTop");
-  bc.innerHTML="<b>"+RANKS[baseCode>>2]+"</b>"+SUITS[baseCode&3];
+  bc.innerHTML="<b>"+RANKS[baseCode>>2]+"</b>"+SW_ICON(SUIT_NAMES[baseCode&3]);
   $("baseBtn").style.color=RED[baseCode&3]?"var(--g-danger)":"var(--g-text)";
   $("stockTop").innerHTML=sp<stock.length?"<b>"+(stock.length-sp)+"</b>张":"<b>空</b>";
+  $("stockBtn").classList.toggle("empty",sp>=stock.length);
+}
+/* 入场错落：仅发牌那一次挂 entering，之后摘除 */
+var enterTimer=null;
+function playDeal(){
+  var cols=$("cols");
+  cols.classList.remove("entering");
+  void cols.offsetWidth; /* 强制重排，让动画可重复触发 */
+  cols.classList.add("entering");
+  if(enterTimer)clearTimeout(enterTimer);
+  enterTimer=setTimeout(function(){cols.classList.remove("entering");enterTimer=null;},window.__gRM?80:1460);
 }
 /* ---------- 输入 ---------- */
 $("cols").addEventListener("click",function(e){
@@ -456,8 +575,9 @@ $("btnLv").addEventListener("click",function(){
   overlayMode="lv";renderLvGrid();
   $("ovTitle").textContent="选择关卡";
   $("ovDesc").textContent="绿色为已通关";
-  $("ovBtn").textContent="取消";
+  ovBtnLabel("x","取消");
   $("ovStay").hidden=true;
+  $("panel").classList.remove("win");
   $("overlay").classList.add("show");
 });
 var overlayMode="";
@@ -471,22 +591,23 @@ function renderLvGrid(){
       b.className="lvbtn"+(i<save.lv?" done":"");
       b.textContent=i+1;
       b.addEventListener("click",function(){
-        $("overlay").classList.remove("show");overlayMode="";
+        hideOverlay();overlayMode="";
         loadLevel(i);say("第 "+(i+1)+" 关");
       });
       g.appendChild(b);
     })(i);
   }
 }
+function hideOverlay(){$("overlay").classList.remove("show");$("lvgrid").hidden=true}
 $("ovBtn").addEventListener("click",function(){
-  $("overlay").classList.remove("show");
+  hideOverlay();
   if(overlayMode==="lv"){overlayMode="";return;}
   if(won){
     if(lv>=ACTIVE.length-1)loadLevel(0);
     else loadLevel(lv+1);
   } else if(lost) loadLevel(lv);
 });
-$("ovStay").addEventListener("click",function(){$("overlay").classList.remove("show")});
+$("ovStay").addEventListener("click",hideOverlay);
 window.addEventListener("keydown",function(e){
   var k=e.key;
   if(overlayMode==="lv"){if(k===" "||k==="Enter")$("ovBtn").click();return;}
@@ -540,6 +661,20 @@ syncSaveFromServer();
     el.addEventListener("keydown",function(e){trap(el,e)});
   }
   for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+<script>
+/* 工具按钮与牌堆图标：内联 SVG（SW_ICON），与 pyramid-sol 工具栏同构；零外链 */
+(function(){
+  function $(id){return document.getElementById(id)}
+  $("btnUndo").insertAdjacentHTML("afterbegin",SW_ICON("undo"));
+  $("btnHint").insertAdjacentHTML("afterbegin",SW_ICON("hint"));
+  $("btnReset").insertAdjacentHTML("afterbegin",SW_ICON("reset"));
+  $("btnLv").insertAdjacentHTML("afterbegin",SW_ICON("grid"));
+  $("ovStay").innerHTML=SW_ICON("x")+"留在本关";
+  /* 基牌球洞旗 + 牌堆牌背水印：强化「目标位 / 一叠牌」的材质感 */
+  $("baseFlag").innerHTML=SW_ICON("flag");
+  $("stockWm").innerHTML=SW_ICON("spade");
 })();
 </script>
 

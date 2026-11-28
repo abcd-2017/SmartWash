@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#F5F6F3">
 <title>量水定容</title>
 <style>
-  /*token:GAME-THEME.md §2 基线（值与基线一致）+ §3 素材 token（--g-st-* 为本作素材色，深色为同色相压暗变体）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-st-jug:#D7E4EC;--g-st-jug2:#B9CFDD;--g-st-jugA:#4A9FD4;--g-st-jugB:#2D9B6A;color-scheme:light }
-  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-st-jug:#31414C;--g-st-jug2:#26343D;--g-st-jugA:#6BB4DE;--g-st-jugB:#3FB381;color-scheme:dark }
+  /*token:GAME-THEME.md §2 基线（值与基线一致）+ §3 素材 token（--g-wj-* 为本作素材色，深色为同色相压暗变体）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-on-primary:#FFFFFF;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-hairline:#EFF1EE;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-wj-glass1:#E8F1F6;--g-wj-glass2:#C4D8E4;--g-wj-water1:#4A9FD4;--g-wj-water2:#2F8FD6;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-wj-glass1:#1E2A32;--g-wj-glass2:#14202A;--g-wj-water1:#6BB4DE;--g-wj-water2:#4A9FD4;color-scheme:dark }
 
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
@@ -26,24 +26,34 @@
   header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
   .sub { font-size: 14px; color: var(--g-muted); }
   .stats { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; min-width: 0; animation: rise .38s ease-out both; }
+  .stat:nth-child(2) { animation-delay: 40ms; }
+  .stat:nth-child(3) { animation-delay: 80ms; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
-  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val { display: inline-block; font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
   .stat .val.low { color: var(--g-danger); }
   .stage { position: relative; }
   canvas { display: block; width: 100%; touch-action: none; border-radius: var(--g-radius-inner); }
   .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .legend { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 2px 10px; animation: rise .38s ease-out both; animation-delay: 120ms; }
+  .lg-chip { display: inline-flex; align-items: center; gap: 5px; background: var(--g-surface2); border-radius: 10px; padding: 3px 9px; font-size: 12px; color: var(--g-muted); line-height: 1.3; }
+  .lg-chip b { color: var(--g-text); font-weight: 600; }
+  .lg-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
   .tools { display: flex; gap: 8px; margin-bottom: 8px; }
   .btn {
-    min-height: 44px; padding: 0 14px; flex: 1;
+    min-height: 44px; padding: 0 10px; flex: 1;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
     border: 0; border-radius: var(--g-radius-btn);
     background: var(--g-surface2); color: var(--g-text);
     font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    transition: transform .14s ease-out, opacity .16s ease-out, background .16s ease-out;
   }
-  .btn.primary { background: var(--g-btn-primary); color: #fff; font-size: 16px; font-weight: 600; }
+  .btn.primary { background: var(--g-btn-primary); color: var(--g-on-primary); }
   .btn.ghost { background: transparent; color: var(--g-primary-deep); box-shadow: inset 0 0 0 2px var(--g-primary-deep); }
-  .btn:active { opacity: .85; }
+  .btn:active { transform: scale(.96); }
   .btn:disabled { opacity: .35; }
+  .swi { display: inline-block; vertical-align: -0.14em; flex: none; }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
   .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
   .overlay {
     position: fixed; inset: 0; z-index: 10;
@@ -68,46 +78,81 @@
     min-height: 44px; border: 0; border-radius: var(--g-radius-inner);
     background: var(--g-surface2); color: var(--g-text);
     font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer;
+    transition: transform .14s ease-out, background .16s ease-out;
   }
+  .lvbtn:active { transform: scale(.96); }
   .lvbtn[disabled] { opacity: .35; }
   .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
 
-  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（同时压 animation-duration 与 animation-delay） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; animation-delay:0ms !important; transition-duration:.01ms !important} }
 
   /* P2: 键盘焦点可见（S5） */
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 
   .jugs { display: flex; gap: 16px; justify-content: center; align-items: flex-end; margin-bottom: 14px; }
-  .jugbox { width: 130px; text-align: center; }
+  .jugbox { width: 130px; text-align: center; animation: rise .38s ease-out both; }
+  .jugbox:nth-child(2) { animation-delay: 60ms; }
   .jug {
-    height: 200px; border: 3px solid var(--g-st-jug2); border-top-width: 2px; border-radius: 6px 6px 14px 14px;
-    background: var(--g-st-jug); position: relative; overflow: hidden;
+    height: 200px; border: 2px solid var(--g-border); border-radius: 10px 10px 14px 14px;
+    background: linear-gradient(160deg, var(--g-wj-glass1), var(--g-wj-glass2));
+    box-shadow: inset 0 2px 6px rgba(255,255,255,.45), inset 0 -6px 12px rgba(0,0,0,.10), var(--g-shadow);
+    position: relative; overflow: hidden;
+  }
+  .jug::before {   /* 玻璃反光面 */
+    content: ""; position: absolute; top: 6%; left: 8%; width: 16%; height: 70%;
+    border-radius: 999px; pointer-events: none;
+    background: linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,0));
   }
   .jug .water {
     position: absolute; left: 0; right: 0; bottom: 0;
-    background: var(--g-st-jugA); transition: height .25s ease-out;
+    background: linear-gradient(180deg, var(--g-wj-water1), var(--g-wj-water2));
+    transition: height .18s ease-out;
   }
-  .jug.jB .water { background: var(--g-st-jugB); }
+  .jug .water::before {   /* 水面亮芯 */
+    content: ""; position: absolute; left: 0; right: 0; top: 0; height: 3px;
+    background: rgba(255,255,255,.65);
+  }
   .jug .amt {
     position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
     font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-text);
     text-shadow: 0 1px 0 var(--g-surface);
   }
-  .jug.hit .amt { color: var(--g-on-soft); text-shadow: none; }
-  .jug .tick { position: absolute; left: 0; right: 0; border-top: 1px dashed var(--g-st-jug2); opacity: .6; }
+  .jug.hit .amt { color: var(--g-success); text-shadow: 0 1px 0 var(--g-surface); }
+  .jug .tick { position: absolute; left: 0; right: 0; border-top: 1px dashed var(--g-border); opacity: .7; }
+  .jug .goal { position: absolute; left: 0; right: 0; border-top: 2px dashed var(--g-warning); opacity: .95; pointer-events: none; }
+  .jug.hit .goal { border-color: var(--g-success); }
   .jugcap { font-size: 14px; color: var(--g-muted); margin-top: 6px; }
   .jugcap b { color: var(--g-primary-deep); }
   .ops { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
   .op {
     min-height: 48px; border: 0; border-radius: var(--g-radius-btn);
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
     background: var(--g-surface2); color: var(--g-text);
-    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap;
+    transition: transform .14s ease-out, background .16s ease-out, color .16s ease-out, box-shadow .16s ease-out;
   }
-  .op:active { background: var(--g-primary-soft); color: var(--g-on-soft); }
+  .op:active { transform: scale(.96); background: var(--g-primary-soft); color: var(--g-on-soft); }
   .op.hintop { background: var(--g-primary-soft); color: var(--g-on-soft); box-shadow: inset 0 0 0 2px var(--g-warning); }
 
 </style>
+<script>
+/* 内联图标库：照抄本库 window.SW_ICON 结构（24 viewBox / currentColor / aria-hidden / 零外链） */
+window.SW_ICON=function(n,s){s=s||"";var P={
+ 'fill':'<path d="M12 3v9m-3-3l3 3 3-3"/><path d="M5 16h14v5H5z"/>',
+ 'empty':'<path d="M12 21V12m-3 3l3-3 3 3"/><path d="M5 4h14v3H5z"/>',
+ 'pour-r':'<path d="M4 8h7v8H4z"/><path d="M11 12h8M16 9l3 3-3 3"/>',
+ 'pour-l':'<path d="M13 8h7v8h-7z"/><path d="M13 12H5M8 9l-3 3 3 3"/>',
+ 'undo':'<path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/>',
+ 'rotate':'<path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/>',
+ 'grid':'<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>',
+ 'play':'<path d="M8 5v14l11-7z"/>','x':'<path d="M6 6l12 12M18 6L6 18"/>',
+ 'bulb':'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.2 11c.8.6 1.2 1.5 1.2 2.4h4c0-.9.4-1.8 1.2-2.4A6 6 0 0 0 12 3z"/>'
+};
+var fill={'play':1};
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
+};
+</script>
 <script>
 //主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
 (function(){
@@ -132,13 +177,18 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
   </div>
   <div class="jugs">
     <div class="jugbox">
-      <div class="jug jA" id="jugA"><div class="water" id="waterA"></div><div class="amt" id="amtA">0</div></div>
+      <div class="jug jA" id="jugA"><div class="water" id="waterA"></div><div class="goal" id="goalA"></div><div class="amt" id="amtA">0</div></div>
       <p class="jugcap">甲壶 容量 <b id="capA">5</b> 升</p>
     </div>
     <div class="jugbox">
-      <div class="jug jB" id="jugB"><div class="water" id="waterB"></div><div class="amt" id="amtB">0</div></div>
+      <div class="jug jB" id="jugB"><div class="water" id="waterB"></div><div class="goal" id="goalB"></div><div class="amt" id="amtB">0</div></div>
       <p class="jugcap">乙壶 容量 <b id="capB">3</b> 升</p>
     </div>
+  </div>
+  <div class="legend">
+    <span class="lg-chip"><span class="lg-dot" style="background:var(--g-wj-water1)"></span><b>水位</b>·甲 / 乙两壶</span>
+    <span class="lg-chip"><span class="lg-dot" style="background:var(--g-warning)"></span><b>金线</b>·目标水位</span>
+    <span class="lg-chip"><b>目标</b>·任一瓶恰好量出</span>
   </div>
   <p class="msg" id="msg" role="status" aria-live="polite">任一壶恰好量出目标水量即过关</p>
   <div class="ops" id="ops">
@@ -146,8 +196,8 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
     <button class="op" data-op="fillB">装满乙壶</button>
     <button class="op" data-op="emptyA">倒空甲壶</button>
     <button class="op" data-op="emptyB">倒空乙壶</button>
-    <button class="op" data-op="pourAB">甲壶 → 乙壶</button>
-    <button class="op" data-op="pourBA">乙壶 → 甲壶</button>
+    <button class="op" data-op="pourAB">甲 → 乙</button>
+    <button class="op" data-op="pourBA">乙 → 甲</button>
   </div>
   <div class="tools" style="margin-top:8px">
     <button class="btn" id="btnUndo">撤销</button>
@@ -284,12 +334,13 @@ function openLevelSelect(){
   }
   $("ovTitle").textContent="选择关卡";
   $("ovDesc").textContent="已通关的关卡会标绿";
-  $("ovBtn").textContent="取消";
+  setOvBtn("取消","x");
   var u=$("ovUndo");
   if(u)u.hidden=true;
   $("overlay").classList.add("show");
 }
 function hideOverlay(){$("overlay").classList.remove("show")}
+function setOvBtn(t,icon){$("ovBtn").innerHTML=window.SW_ICON(icon)+t}
 
 /* 单条结构校验 */
 function validLevelData(d){
@@ -303,7 +354,7 @@ function validLevelData(d){
 }
 /* par 缺省时由内嵌 BFS 补算 */
 function normalizeLevel(d){
-  var par=(Number.isInteger(d.par)&&d.par>0)?d.par:jugBFS(d.a,d.b,d.target,-1,-1).par;
+  var par=(Number.isInteger(d.par)&&d.par>0)?d.par:jugBFS(d.a,d.b,d.target,0,0).par;
   var diff=Number.isInteger(d.difficulty)?Math.min(9,Math.max(1,d.difficulty)):5;
   return {name:String(d.name),a:d.a,b:d.b,target:d.target,par:par,difficulty:diff};
 }
@@ -386,6 +437,8 @@ function render(){
   var hitA=x===target,hitB=y===target;
   $("jugA").classList.toggle("hit",hitA);
   $("jugB").classList.toggle("hit",hitB);
+  $("goalA").style.bottom=Math.round(target/a*100)+"%";
+  $("goalB").style.bottom=Math.round(target/b*100)+"%";
 }
 /* ---------- 操作 ---------- */
 function applyOp(op){
@@ -423,7 +476,7 @@ function winLevel(){
   if(GB.available)GB.reportScore(GAME_KEY,{metricValue:lv+1,metricExtra:history.length}).catch(function(){});
   $("ovTitle").textContent=(lv>=LEVELS.length-1)?"全部通关！":"量出来了！";
   $("ovDesc").innerHTML="用 "+history.length+" 步量出 "+target+" 升（参考最优 "+$("stPar").textContent+" 步）"+(lv<LEVELS.length-1?"<br>已解锁第 "+(lv+2)+" 关":"<br>48 关全部完成");
-  $("ovBtn").textContent=(lv>=LEVELS.length-1)?"回到第 1 关":"下一关";
+  setOvBtn((lv>=LEVELS.length-1)?"回到第 1 关":"下一关",(lv>=LEVELS.length-1)?"rotate":"play");
   $("overlay").classList.add("show");
 }
 /* ---------- 输入 ---------- */
@@ -452,6 +505,17 @@ window.addEventListener("keydown",function(e){
 /* ---------- 启动 ---------- */
 palLoad();loadLevel(save.lv);
 syncLevelsFromServer();syncSaveFromServer();
+
+/* 按钮图标：内联 SVG（SW_ICON，24 viewBox / currentColor），文字前带图标 */
+var opIcons={fillA:"fill",fillB:"fill",emptyA:"empty",emptyB:"empty",pourAB:"pour-r",pourBA:"pour-l"};
+document.querySelectorAll(".op").forEach(function(el){
+  el.insertAdjacentHTML("afterbegin",window.SW_ICON(opIcons[el.dataset.op]||"fill"));
+});
+$("btnUndo").insertAdjacentHTML("afterbegin",window.SW_ICON("undo"));
+$("btnHint").insertAdjacentHTML("afterbegin",window.SW_ICON("bulb"));
+$("btnReset").insertAdjacentHTML("afterbegin",window.SW_ICON("rotate"));
+$("btnLv").insertAdjacentHTML("afterbegin",window.SW_ICON("grid"));
+setOvBtn("下一关","play");
 
 })();
 </script>

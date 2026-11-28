@@ -7,8 +7,8 @@
 <title>螺母配对</title>
 <style>
   /*token:GAME-THEME.md§2（螺母五色素材 token 统一 --g-st- 前缀，§3 D2）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-on-primary:#FFF;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;--g-st-n1:#2D9B6A;--g-st-n2:#D9822B;--g-st-n3:#4A9FD4;--g-st-n4:#C9526B;--g-st-n5:#8A8F87;--g-st-metal:#B9B2A4;--g-st-metal2:#8F887B;color-scheme:light }
-  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-st-n1:#2D9B6A;--g-st-n2:#B8681F;--g-st-n3:#4A9FD4;--g-st-n4:#A83850;--g-st-n5:#6E736B;--g-st-metal:#5C5748;--g-st-metal2:#45412F;color-scheme:dark }
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-on-primary:#FFF;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-hairline:#EFF1EE;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;--g-st-n1:#2D9B6A;--g-st-n2:#D9822B;--g-st-n3:#4A9FD4;--g-st-n4:#C9526B;--g-st-n5:#8A8F87;--g-st-metal:#B9B2A4;--g-st-metal2:#8F887B;--g-nb-stud1:#FFFFFF;--g-nb-stud2:#E4EBE2;--g-nb-metal-hi:#E7E2D4;--g-nb-rack:#E8F6EF;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-hairline:#262A27;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-st-n1:#2D9B6A;--g-st-n2:#B8681F;--g-st-n3:#4A9FD4;--g-st-n4:#A83850;--g-st-n5:#6E736B;--g-st-metal:#5C5748;--g-st-metal2:#45412F;--g-nb-stud1:#2A2F2B;--g-nb-stud2:#1B1F1C;--g-nb-metal-hi:#6E675A;--g-nb-rack:#1D3229;color-scheme:dark }
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
   body {
@@ -25,35 +25,64 @@
   .wrap { width: 100%; max-width: 480px; }
   header { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; margin-bottom: 16px; }
   .boxes { display: flex; gap: 8px; }
-  .box { background: var(--g-btn-primary); color: var(--g-on-primary); border-radius: 10px; min-width: 86px; padding: 5px 12px; text-align: center; line-height: 1.3; }
-  .box.alt { background: var(--g-surface); color: var(--g-text); border: 1px solid var(--g-border); }
+  .box { background: linear-gradient(180deg,var(--g-primary) 0%,var(--g-btn-primary) 100%); color: var(--g-on-primary); border-radius: 10px; min-width: 86px; padding: 5px 12px; text-align: center; line-height: 1.3; box-shadow: inset 0 1px 0 rgba(255,255,255,.28), 0 2px 8px rgba(20,40,30,.14); animation: rise .38s ease-out both; }
+  .box:nth-child(2) { animation-delay: 40ms; }
+  .box:nth-child(3) { animation-delay: 80ms; }
+  .box.alt { background: linear-gradient(180deg,var(--g-surface) 0%,var(--g-surface2) 100%); color: var(--g-text); border: 1px solid var(--g-border); box-shadow: var(--g-shadow); }
   .box .label { display: block; font-size: 12px; }
-  .box b { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
-  .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+  .box b { display: inline-block; font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .box b.pop { animation: valpop .24s ease-out; }
+  .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; animation: rise .38s ease-out both; animation-delay: 100ms; }
   .hint { margin: 0; font-size: 14px; color: var(--g-muted); }
-  .btn { min-height: 44px; padding: 0 16px; border: 0; border-radius: 10px; background: var(--g-btn-primary); color: var(--g-on-primary); font-size: 16px; font-weight: 600; font-family: inherit; cursor: pointer; }
+  .btn { min-height: 44px; padding: 0 16px; border: 0; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: var(--g-btn-primary); color: var(--g-on-primary); font-size: 16px; font-weight: 600; font-family: inherit; cursor: pointer; transition: transform .14s ease-out, opacity .16s ease-out, background .16s ease-out; }
   .btn.ghost { background: var(--g-surface); color: var(--g-text); border: 1px solid var(--g-border); }
-  .btn:active { opacity: .85; }
+  .btn:active { transform: scale(.96); }
+  .swi { display: inline-block; vertical-align: -0.14em; flex: none; }
+  .legend { display: flex; gap: 8px; margin: 0 2px 10px; animation: rise .38s ease-out both; animation-delay: 140ms; }
+  .lg-chip { flex: 1; display: flex; align-items: center; gap: 6px; min-width: 0; background: var(--g-surface2); border-radius: 10px; padding: 5px 8px; font-size: 12px; color: var(--g-muted); line-height: 1.3; }
+  .lg-chip .swi { color: var(--g-primary-deep); }
+  .lg-chip b { color: var(--g-text); font-weight: 600; }
   .stage { position: relative; width: 100%; }
   canvas { display: block; width: 100%; aspect-ratio: 24 / 26; border-radius: var(--g-radius-inner); border: 1px solid var(--g-border); background: var(--g-surface); touch-action: none; }
   .overlay { position: absolute; inset: 0; border-radius: var(--g-radius-inner); background: var(--g-scrim); display: none; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 16px; text-align: center; }
   .overlay.show { display: flex; animation: fadein .2s ease-out; }
   @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
-  .card { width: 100%; max-width: 320px; max-height: 100%; overflow: auto; background: var(--g-surface); border: 1px solid var(--g-border); border-radius: var(--g-radius); box-shadow: var(--g-shadow); padding: 16px; }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes pop { 0% { transform: scale(.9); opacity: 0; } 60% { transform: scale(1.03); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+  @keyframes winpop { 0% { transform: scale(.86); opacity: 0; } 62% { transform: scale(1.05); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+  @keyframes valpop { 0% { transform: scale(1); } 40% { transform: scale(1.14); } 100% { transform: scale(1); } }
+  .card { width: 100%; max-width: 320px; max-height: 100%; overflow: auto; background: linear-gradient(180deg,var(--g-surface) 0%,var(--g-surface2) 100%); border: 1px solid var(--g-border); border-radius: var(--g-radius); box-shadow: var(--g-shadow); padding: 16px; animation: pop .28s ease-out; }
+  .card.win { animation: winpop .45s cubic-bezier(.18,.9,.3,1.4); }
   .ov-kicker { margin: 0 0 4px; font-size: 12px; font-weight: 700; letter-spacing: .1em; color: var(--g-muted); }
   .card h2 { margin: 0 0 8px; font-size: 18px; line-height: 1.25; color: var(--g-text); }
   .ov-text { margin: 0 0 12px; font-size: 14px; line-height: 1.6; color: var(--g-muted); }
   .ov-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 0 0 12px; }
-  .ov-stats .st { background: var(--g-surface2); border-radius: 10px; padding: 7px 4px; }
+  .ov-stats .st { background: linear-gradient(180deg,var(--g-surface) 0%,var(--g-surface2) 100%); border-radius: 10px; padding: 7px 4px; box-shadow: inset 0 1px 0 rgba(255,255,255,.5); }
   .ov-stats b { display: block; font-size: 18px; color: var(--g-primary-deep); font-variant-numeric: tabular-nums; }
   .ov-stats span { font-size: 12px; color: var(--g-muted); }
   .ov-btns { display: grid; gap: 8px; }
-  .foot { margin: 14px 0 0; font-size: 12px; line-height: 1.6; color: var(--g-muted); text-align: center; }
+  .foot { margin: 14px 0 0; font-size: 12px; line-height: 1.6; color: var(--g-muted); text-align: center; animation: rise .38s ease-out both; animation-delay: 180ms; }
 
   /* S2: 动效敏感用户降级（动效层指令，不受 §4 主题层 matchMedia 禁令约束） */
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; animation-delay:0ms !important; transition-duration:.01ms !important} }
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 </style>
+<script>
+/* 内联图标库：照抄本库 window.SW_ICON 结构（24 viewBox / currentColor / aria-hidden / 零外链） */
+window.SW_ICON=function(n,s){s=s||"";var P={
+ 'pause':'<path d="M9 5v14M15 5v14"/>',
+ 'rotate':'<path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/>',
+ 'play':'<path d="M8 5v14l11-7z"/>',
+ 'arrow-right':'<path d="M5 12h14M13 6l6 6-6 6"/>',
+ 'check':'<path d="M4 12.5l5 5L20 6.5"/>',
+ 'x':'<path d="M6 6l12 12M18 6L6 18"/>',
+ 'target':'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/>',
+ 'nut':'<path d="M12 2.5l8.3 4.8v9.4L12 21.5l-8.3-4.8V7.3z"/>'
+};
+var fill={'play':1,'nut':1};
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
+};
+</script>
 <script>
 //主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
 (function(){
@@ -94,6 +123,11 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
         <div class="ov-btns" id="ovB"></div>
       </div>
     </div>
+  </div>
+  <div class="legend">
+    <span class="lg-chip"><span class="swi" data-ic="nut"></span><span><b>螺柱</b> · 点选螺母</span></span>
+    <span class="lg-chip"><span class="swi" data-ic="target"></span><span><b>收纳架</b> · 目标</span></span>
+    <span class="lg-chip"><span class="swi" data-ic="check"></span><span><b>同色配对</b> · 收纳</span></span>
   </div>
   <p class="foot">点螺栓柱取顶螺母/放回，收纳架从左到右按序配对 · 方向键选择 · 空格取放 · 螺柱最多叠 4 只 · 超预算失败 · P 暂停</p>
 </div>
@@ -229,13 +263,30 @@ function palLoad(){
   PAL.primary=v("--g-primary");PAL.deep=v("--g-primary-deep");PAL.soft=v("--g-primary-soft");PAL.onSoft=v("--g-on-soft");
   PAL.danger=v("--g-danger");PAL.warning=v("--g-warning");PAL.success=v("--g-success");
   PAL.metal=v("--g-st-metal");PAL.metal2=v("--g-st-metal2");
+  PAL.metalHi=v("--g-nb-metal-hi");PAL.stud1=v("--g-nb-stud1");PAL.stud2=v("--g-nb-stud2");PAL.rack=v("--g-nb-rack");
   PAL.n=["--g-st-n1","--g-st-n2","--g-st-n3","--g-st-n4","--g-st-n5"].map(function(n){return s.getPropertyValue(n).trim()});
 }
 window.__gOnTheme=function(){palLoad();draw();};
+/* ---------- 颜色工具：仅由 PAL 色值混合出明暗，JS 内零颜色字面量 ---------- */
+var BLACK="rgb(0,0,0)",WHITE="rgb(255,255,255)";   // 恒暗 / 恒白（阴影与高光）
+function colParse(c){
+  c=String(c).trim();
+  if(c.charAt(0)==="#")c=c.slice(1);
+  if(c.length===3)c=c.charAt(0)+c.charAt(0)+c.charAt(1)+c.charAt(1)+c.charAt(2)+c.charAt(2);
+  if(c.length===6)return[parseInt(c.slice(0,2),16),parseInt(c.slice(2,4),16),parseInt(c.slice(4,6),16)];
+  var m=c.match(/(\d+)[,\s]+(\d+)[,\s]+(\d+)/);
+  return m?[+m[1],+m[2],+m[3]]:[0,0,0];
+}
+function colMix(a,b,t){
+  var A=colParse(a),B=colParse(b);
+  return "rgb("+Math.round(A[0]+(B[0]-A[0])*t)+","+Math.round(A[1]+(B[1]-A[1])*t)+","+Math.round(A[2]+(B[2]-A[2])*t)+")";
+}
+function colShade(c,t){return colMix(c,t<0?BLACK:WHITE,t<0?-t:t)}
 function nutColor(ch){return PAL.n["abcde".indexOf(ch)]||PAL.metal}
 /* ---------- DOM ---------- */
 function $(id){return document.getElementById(id)}
-var cv=$("cv"),ctx=cv.getContext("2d"),ov=$("ov");
+function popVal(el){if(!el)return;el.classList.remove("pop");void el.offsetWidth;el.classList.add("pop")}
+var cv=$("cv"),ctx=cv.getContext("2d"),ov=$("ov"),ovCard=ov.querySelector(".card");
 var hudMove=$("hudMove"),hudDone=$("hudDone"),hudLv=$("hudLv");
 var ovK=$("ovK"),ovT=$("ovT"),ovX=$("ovX"),ovS=$("ovS"),ovB=$("ovB");
 var lvIdx=Math.min(save.lv,LEVELS.length-1);
@@ -243,9 +294,10 @@ var S={phase:"menu",paused:false,studs:[],bolts:[],progress:0,hand:null,
   moves:0,budget:0,sel:0,useKey:false,shake:0,parts:[],floats:[]};
 function curLv(){return LEVELS[Math.min(lvIdx,LEVELS.length-1)]}
 function syncHud(){
-  hudMove.textContent=S.moves+"/"+S.budget;
-  hudDone.textContent=String(S.progress)+"/"+S.bolts.length;
-  hudLv.textContent=(lvIdx+1)+"/"+LEVELS.length;
+  var mv=S.moves+"/"+S.budget,dn=String(S.progress)+"/"+S.bolts.length,lv=(lvIdx+1)+"/"+LEVELS.length;
+  if(hudMove.textContent!==mv){hudMove.textContent=mv;popVal(hudMove)}
+  if(hudDone.textContent!==dn){hudDone.textContent=dn;popVal(hudDone)}
+  if(hudLv.textContent!==lv){hudLv.textContent=lv;popVal(hudLv)}
 }
 function loadLevel(n){
   lvIdx=Math.max(0,Math.min(n,LEVELS.length-1));
@@ -261,6 +313,7 @@ function loadLevel(n){
 /* ---------- 覆盖层 ---------- */
 function showOv(o){
   ovK.textContent=o.k||"";ovT.textContent=o.t||"";ovX.textContent=o.x||"";
+  ovCard.classList.toggle("win",!!o.win);   // 过关轻弹（渲染反馈）
   var st=o.stats||[];
   ovS.style.display=st.length?"grid":"none";
   ovS.innerHTML=st.map(function(s){return '<div class="st"><b>'+s[1]+"</b><span>"+s[0]+"</span></div>"}).join("");
@@ -268,7 +321,8 @@ function showOv(o){
   (o.btns||[]).forEach(function(b){
     var el=document.createElement("button");
     el.className="btn"+(b[1]==="ghost"?" ghost":"");
-    el.textContent=b[0];el.addEventListener("click",b[2]);ovB.appendChild(el);
+    el.innerHTML=(b[3]?window.SW_ICON(b[3]):"")+b[0];   // 图标 + 文案，避免 textContent 抹掉图标
+    el.addEventListener("click",b[2]);ovB.appendChild(el);
   });
   ov.classList.add("show");
 }
@@ -276,15 +330,15 @@ function hideOv(){ov.classList.remove("show")}
 function pauseGame(){
   if(S.phase!=="run"||S.paused)return;
   S.paused=true;
-  showOv({k:"PAUSED",t:"已暂停",x:"先想清楚哪只螺母挡路，再省着步数。",
-    btns:[["继续","primary",function(){S.paused=false;hideOv()}],["重开本关","ghost",function(){loadLevel(lvIdx)}]]});
+  showOv({k:"PAUSED",t:"已暂停",x:"先想清楚哪只螺母挡路，再省着步数。",win:false,
+    btns:[["继续","primary",function(){S.paused=false;hideOv()},"play"],["重开本关","ghost",function(){loadLevel(lvIdx)},"rotate"]]});
 }
 function showMenu(){
   S.phase="menu";
-  showOv({k:"NUT AND BOLT",t:"螺母配对",
+  showOv({k:"NUT AND BOLT",t:"螺母配对",win:false,
     x:"点螺柱拧下顶部螺母，收纳架必须从左到右按序配对螺栓；挡路的先挪到别的螺柱（每柱最多 4 只）。步数预算有限，超支失败。",
     stats:[["进度",lvIdx+1+"/"+LEVELS.length]],
-    btns:[["开始 · 第 "+(lvIdx+1)+" 关","primary",function(){loadLevel(lvIdx)}]]});
+    btns:[["开始 · 第 "+(lvIdx+1)+" 关","primary",function(){loadLevel(lvIdx)},"play"]]});
 }
 /* ---------- 动作 ---------- */
 function actStud(i){
@@ -325,18 +379,18 @@ function win(){
   persist();
   if(GB.available)GB.reportScore("nut-bolt",{metricValue:save.lv+1,metricExtra:"省"+spare+"步"}).catch(function(){});
   var hasNext=lvIdx+1<LEVELS.length;
-  showOv({k:"ALL MATCHED",t:"全部配对",
+  showOv({k:"ALL MATCHED",t:"全部配对",win:true,
     x:next?"解锁下一关：颜色更多、预算更紧，规划好顺序再动手。":"全部关卡完成，工具间大师！",
     stats:[["步数",S.moves],["预算",S.budget],["省下",spare]],
-    btns:hasNext?[["下一关","primary",function(){loadLevel(lvIdx+1)}],["重玩本关","ghost",function(){loadLevel(lvIdx)}]]
-                :[["再来一轮","primary",function(){loadLevel(0)}]]});
+    btns:hasNext?[["下一关","primary",function(){loadLevel(lvIdx+1)},"arrow-right"],["重玩本关","ghost",function(){loadLevel(lvIdx)},"rotate"]]
+                :[["再来一轮","primary",function(){loadLevel(0)},"rotate"]]});
 }
 function lose(){
   S.phase="over";
-  showOv({k:"OUT OF BUDGET",t:"步数超支",
-    x:"用了 "+S.moves+" 步超出预算 "+S.budget+"。每只挡路螺母都要多花两步，先收能直接配对的。",
+  showOv({k:"OUT OF BUDGET",t:"步数超支",win:false,
+    x:"用了 "+S.moves+" 步超出预算 "+S.budget+"。每只挡路螺母都要多花一步，先收能直接配对的。",
     stats:[["步数",S.moves],["预算",S.budget]],
-    btns:[["重试本关","primary",function(){loadLevel(lvIdx)}]]});
+    btns:[["重试本关","primary",function(){loadLevel(lvIdx)},"rotate"]]});
 }
 function flash(txt,col){S.floats.push({x:MW/2,y:150,txt:txt,col:col||PAL.danger,t:.9})}
 /* ---------- 几何 ---------- */
@@ -354,11 +408,16 @@ function resize(){
   SC=r.width/MW;
   ctx.setTransform(dpr*SC,0,0,dpr*SC,0,0);
 }
-function drawNut(x,y,ch,scale,ghost){
-  var s=(scale||1)*15;
-  ctx.globalAlpha=ghost?0.55:1;
-  ctx.fillStyle=nutColor(ch);
-  ctx.strokeStyle=PAL.metal2;ctx.lineWidth=1.4;
+function rrect(x,y,w,h,r){
+  r=Math.max(0,Math.min(r,w/2,h/2));
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+}
+/* 六角螺母：渐变体身 + 顶缘高光 + 落地投影 + 内凹孔 */
+function hexPath(x,y,s){
   ctx.beginPath();
   ctx.moveTo(x-s,y-s*0.62);
   ctx.lineTo(x-s*0.55,y-s);
@@ -368,28 +427,65 @@ function drawNut(x,y,ch,scale,ghost){
   ctx.lineTo(x+s*0.55,y+s);
   ctx.lineTo(x-s*0.55,y+s);
   ctx.lineTo(x-s,y+s*0.62);
-  ctx.closePath();ctx.fill();ctx.stroke();
-  ctx.fillStyle=PAL.surface;
+  ctx.closePath();
+}
+function drawNut(x,y,ch,scale,ghost){
+  var s=(scale||1)*15,col=nutColor(ch);
+  ctx.globalAlpha=ghost?0.55:1;
+  ctx.save();
+  ctx.shadowColor="rgba(0,0,0,0.26)";ctx.shadowBlur=s*0.5;ctx.shadowOffsetY=s*0.22;
+  var g=ctx.createLinearGradient(x,y-s,x,y+s);
+  g.addColorStop(0,colMix(col,WHITE,0.38));
+  g.addColorStop(0.5,col);
+  g.addColorStop(1,colShade(col,-0.30));
+  ctx.fillStyle=g;hexPath(x,y,s);ctx.fill();
+  ctx.restore();
+  ctx.strokeStyle=colShade(col,-0.45);ctx.lineWidth=1.4;hexPath(x,y,s);ctx.stroke();
+  // 顶缘高光（恒白）
+  ctx.strokeStyle="rgba(255,255,255,.55)";ctx.lineWidth=1.2;ctx.lineCap="round";
+  ctx.beginPath();ctx.moveTo(x-s*0.5,y-s*0.92);ctx.lineTo(x+s*0.5,y-s*0.92);ctx.stroke();
+  // 中心孔（内凹：暗底 + 亮缘）
+  ctx.fillStyle=PAL.surface2;
   ctx.beginPath();ctx.arc(x,y,s*0.38,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle=colShade(col,-0.5);ctx.lineWidth=1.2;
+  ctx.beginPath();ctx.arc(x,y,s*0.38,0,Math.PI*2);ctx.stroke();
+  ctx.strokeStyle="rgba(255,255,255,.4)";ctx.lineWidth=1;
+  ctx.beginPath();ctx.arc(x,y,s*0.38,-2.3,-0.7);ctx.stroke();
   ctx.globalAlpha=1;
 }
 function draw(){
-  ctx.fillStyle=PAL.surface2;ctx.fillRect(0,0,MW,MH);
-  ctx.fillStyle=PAL.surface;ctx.fillRect(0,MH-150,MW,150);
+  // 场景：墙面（竖向渐变，避免大片平涂）+ 地面（渐变「面」+ 2px 边线 + 顶缘亮线）
+  var wg=ctx.createLinearGradient(0,0,0,MH-150);
+  wg.addColorStop(0,PAL.surface);wg.addColorStop(1,PAL.surface2);
+  ctx.fillStyle=wg;ctx.fillRect(0,0,MW,MH-150);
+  var gg=ctx.createLinearGradient(0,MH-150,0,MH);
+  gg.addColorStop(0,PAL.surface);gg.addColorStop(1,PAL.surface2);
+  ctx.fillStyle=gg;ctx.fillRect(0,MH-150,MW,150);
   ctx.fillStyle=PAL.border;ctx.fillRect(0,MH-152,MW,2);
+  ctx.fillStyle="rgba(255,255,255,.45)";ctx.fillRect(0,MH-150,MW,1);
   var L=curLv();
   var n=S.studs.length;
   ctx.fillStyle=PAL.muted;ctx.font="700 14px system-ui,sans-serif";ctx.textAlign="left";ctx.textBaseline="middle";
   ctx.fillText("螺柱",20,120);
-  //螺柱
+  //螺柱（渐变柱面 + 凹槽顶影 + 落地投影）
   for(var i=0;i<n;i++){
     var x=studX(i,n),y=studY();
     var sel=S.useKey&&S.sel===i;
-    ctx.fillStyle=sel?PAL.soft:PAL.surface2;
-    ctx.strokeStyle=sel?PAL.primary:PAL.border;ctx.lineWidth=2;
-    ctx.beginPath();ctx.rect(x-30,y-40,60,190);ctx.fill();ctx.stroke();
-    ctx.fillStyle=PAL.metal;
-    ctx.fillRect(x-5,y-30,10,170);
+    var sg=ctx.createLinearGradient(0,y-40,0,y+150);
+    if(sel){sg.addColorStop(0,PAL.soft);sg.addColorStop(1,PAL.soft);}
+    else{sg.addColorStop(0,PAL.stud1);sg.addColorStop(1,PAL.stud2);}
+    ctx.save();
+    ctx.shadowColor="rgba(0,0,0,0.12)";ctx.shadowBlur=6;ctx.shadowOffsetY=3;
+    ctx.fillStyle=sg;rrect(x-30,y-40,60,190,10);ctx.fill();
+    ctx.restore();
+    ctx.fillStyle="rgba(0,0,0,.05)";rrect(x-30,y-40,60,12,10);ctx.fill();
+    ctx.fillStyle="rgba(255,255,255,.5)";ctx.fillRect(x-26,y+146,52,1.5);
+    ctx.strokeStyle=sel?PAL.primary:PAL.border;ctx.lineWidth=sel?2.4:2;
+    rrect(x-30,y-40,60,190,10);ctx.stroke();
+    // 螺杆（金属渐变：暗面—亮芯—暗面）
+    var mg=ctx.createLinearGradient(x-5,0,x+5,0);
+    mg.addColorStop(0,PAL.metal2);mg.addColorStop(0.5,PAL.metalHi);mg.addColorStop(1,PAL.metal2);
+    ctx.fillStyle=mg;ctx.fillRect(x-5,y-30,10,170);
     for(var d=0;d<S.studs[i].length;d++){
       drawNut(x,y+120-d*40,S.studs[i][d],1,d===S.studs[i].length-1&&S.hand!==null);
     }
@@ -403,19 +499,39 @@ function draw(){
     ctx.fillStyle=PAL.muted;ctx.font="400 12px system-ui,sans-serif";ctx.textAlign="center";
     ctx.fillText("手中 · 点同色螺栓收纳",MW/2,60);
   }
-  //螺栓
+  //螺栓收纳架（目标「面」）
   var m=S.bolts.length;
   ctx.fillStyle=PAL.muted;ctx.font="700 14px system-ui,sans-serif";ctx.textAlign="left";ctx.textBaseline="middle";
   ctx.fillText("收纳架",20,352);
+  if(m>0){
+    var x0=boltX(0,m)-30,x1=boltX(m-1,m)+30;
+    var rg=ctx.createLinearGradient(0,boltY()-44,0,boltY()+44);
+    rg.addColorStop(0,PAL.rack);rg.addColorStop(1,PAL.surface2);
+    ctx.save();ctx.shadowColor="rgba(0,0,0,0.10)";ctx.shadowBlur=6;ctx.shadowOffsetY=3;
+    ctx.fillStyle=rg;rrect(x0,boltY()-44,x1-x0,88,12);ctx.fill();ctx.restore();
+    ctx.strokeStyle=PAL.border;ctx.lineWidth=1.5;rrect(x0,boltY()-44,x1-x0,88,12);ctx.stroke();
+  }
+  var pulse=.5+.5*Math.sin(performance.now()/280);
   for(i=0;i<m;i++){
     var bx=boltX(i,m),by=boltY();
     var selB=S.useKey&&S.sel===n+i;
     var filled=i<S.progress,cur=i===S.progress;
-    ctx.fillStyle=filled?PAL.soft:(selB||cur?PAL.soft:PAL.surface);
-    ctx.strokeStyle=selB?PAL.primary:(cur?nutColor(S.bolts[i]):PAL.border);ctx.lineWidth=2;
-    ctx.beginPath();ctx.rect(bx-22,by-36,44,72);ctx.fill();ctx.stroke();
-    //螺栓杆
-    ctx.fillStyle=PAL.metal;
+    // 当前目标槽位：呼吸光环（该点哪）
+    if(cur&&!filled){
+      ctx.save();ctx.globalAlpha=.22+.22*pulse;
+      ctx.strokeStyle=nutColor(S.bolts[i]);ctx.lineWidth=5;
+      ctx.beginPath();ctx.arc(bx,by-24,16,0,Math.PI*2);ctx.stroke();ctx.restore();
+    }
+    var cg=ctx.createLinearGradient(0,by-36,0,by+36);
+    if(filled||selB||cur){cg.addColorStop(0,PAL.soft);cg.addColorStop(1,PAL.surface2);}
+    else{cg.addColorStop(0,PAL.surface);cg.addColorStop(1,PAL.surface2);}
+    ctx.fillStyle=cg;rrect(bx-22,by-36,44,72,8);ctx.fill();
+    ctx.strokeStyle=selB?PAL.primary:(cur?nutColor(S.bolts[i]):PAL.border);ctx.lineWidth=cur?2.6:2;
+    rrect(bx-22,by-36,44,72,8);ctx.stroke();
+    //螺栓杆（金属渐变）
+    var bg2=ctx.createLinearGradient(bx-4,0,bx+4,0);
+    bg2.addColorStop(0,PAL.metal2);bg2.addColorStop(0.5,PAL.metalHi);bg2.addColorStop(1,PAL.metal2);
+    ctx.fillStyle=bg2;
     ctx.fillRect(bx-4,by-24,8,48);
     ctx.fillRect(bx-8,by+20,16,4);
     ctx.fillRect(bx-8,by+14,16,4);
@@ -498,6 +614,11 @@ function loop(now){
   draw();
 }
 /* ---------- 启动 ---------- */
+/* 工具钮 / 图例图标注入（内联 SVG，零外链；覆盖层按钮走 showOv 的 icon 字段） */
+$("btnPause").insertAdjacentHTML("afterbegin",window.SW_ICON("pause"));
+$("btnReset").insertAdjacentHTML("afterbegin",window.SW_ICON("rotate"));
+var icEls=document.querySelectorAll("[data-ic]"),ii;
+for(ii=0;ii<icEls.length;ii++)icEls[ii].innerHTML=window.SW_ICON(icEls[ii].getAttribute("data-ic"));
 palLoad();
 syncHud();
 showMenu();

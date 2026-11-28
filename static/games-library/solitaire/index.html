@@ -7,9 +7,9 @@
 <meta name="description" content="空当接龙（Klondike Solitaire）单文件 H5：经典翻一张规则，红黑交替点数递减，同花色从 A 收满四方。">
 <title>空当接龙</title>
 <style>
-  /*token:GAME-THEME.md §2（按需取用）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-success:#17734A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light }
-  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
+  /*token:GAME-THEME.md §2 基线（值与基线一致）+ §3 素材 token（牌面 / 牌背 / 牌桌毡面 / 凹槽）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-sol-face1:#FFFFFF;--g-sol-face2:#EDF4EF;--g-sol-back1:#1E8C5C;--g-sol-back2:#0B4A30;--g-sol-felt1:#2F8A66;--g-sol-felt2:#1E6B4A;--g-sol-cell:#175C3D;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-sol-face1:#262B27;--g-sol-face2:#1A1E1B;--g-sol-back1:#3F6B55;--g-sol-back2:#22382D;--g-sol-felt1:#27604A;--g-sol-felt2:#123A2C;--g-sol-cell:#0D2A20;color-scheme:dark }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
   html, body { margin: 0; padding: 0; }
@@ -25,63 +25,116 @@
   .wrap { width: 100%; max-width: 480px; }
   header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; padding: 0 2px; }
   .sub { font-size: 14px; color: var(--g-muted); line-height: 1.4; }
+  /* 记分盒：轻立体（顶光渐变 + 描边 + 投影），入场错落 40ms */
   .stats { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat { flex: 1; min-width: 0; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; }
+  .stat { flex: 1; min-width: 0; border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3;
+    background: linear-gradient(180deg, var(--g-surface), var(--g-surface2));
+    border: 1px solid var(--g-border); box-shadow: var(--g-shadow);
+    animation: rise .38s ease-out backwards; }
+  .stat:nth-child(2) { animation-delay: 40ms; }
+  .stat:nth-child(3) { animation-delay: 80ms; }
+  .stat:nth-child(4) { animation-delay: 120ms; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
   .stat .val { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
   .stat .val.plain { color: var(--g-text); }
+  .swi { display: inline-block; vertical-align: -0.14em; flex: none; }
   .btn {
     min-height: 44px; padding: 0 14px; border: 0; border-radius: var(--g-radius-btn);
     background: var(--g-btn-primary); color: #fff;
     font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    transition: transform .14s ease-out, opacity .16s ease-out;
   }
-  .btn:active { opacity: .85; }
+  .btn:active { transform: scale(.96); }
   .btn.ghost { background: var(--g-surface2); color: var(--g-text); }
-  .btn.sm { min-height: 44px; padding: 0 12px; font-size: 14px; flex: 0 0 auto; background: var(--g-btn-primary); color: #fff; }
-  /* 牌桌 */
-  /* 375px 布局：body 左右各 8px → 内容 359px；board 左右各 6px → 347px；
-     7 列 gap 6px → 每列 (347-36)/7 ≈ 44.4px；牌高 = 列宽 × 7/5 ≈ 62px；
-     列内阶梯 --step:22px（18-24px 区间内），列高由 --n 计算 padding-bottom 撑开。 */
-  .board { background: var(--g-surface); border-radius: var(--g-radius); box-shadow: var(--g-shadow); padding: 8px 6px 10px; }
-  .top { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 10px; }
+  .btn.sm { min-height: 44px; padding: 0 12px; font-size: 14px; flex: 0 0 auto; }
+  /* 牌桌：绿毡「面」+ 顶光，替代白板；外圈卡片档投影 */
+  .board {
+    background:
+      radial-gradient(120% 80% at 50% 0%, rgba(255,255,255,.14), rgba(255,255,255,0) 55%),
+      linear-gradient(180deg, var(--g-sol-felt1), var(--g-sol-felt2));
+    border-radius: var(--g-radius); box-shadow: var(--g-shadow);
+    padding: 10px 6px 12px;
+  }
+  .top { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 10px; align-items: start; }
+  /* 目标区：四个归位凹槽收进一块更浅的「面」，与牌库 / 废牌堆区分开 */
+  .fndzone { grid-column: span 4; display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; padding: 3px;
+    background: rgba(255,255,255,.10); border-radius: var(--g-radius-inner);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.16), inset 0 2px 8px rgba(0,0,0,.22); }
   .slot { position: relative; aspect-ratio: 5 / 7; border-radius: 10px; }
   .slot.ghost { visibility: hidden; }
-  .slot.empty { border: 1px dashed var(--g-border); background: var(--g-surface2); }
-  .slot .wm { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 22px; color: var(--g-muted); }
-  .slot .recycle { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 22px; color: var(--g-muted); }
-  .slot .count {
-    position: absolute; right: 3px; bottom: 3px; min-width: 18px; height: 18px; padding: 0 4px;
-    border-radius: 10px; background: var(--g-primary-soft); color: var(--g-on-soft);
+  /* 空槽：内凹「面」+ 内阴影，不用细线 */
+  .slot.empty { background: var(--g-sol-cell); border: 1px solid rgba(255,255,255,.16); box-shadow: inset 0 2px 6px rgba(0,0,0,.28); }
+  .slot.fnd { border: 1px solid rgba(255,255,255,.16); }
+  .slot .wm { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 22px; color: rgba(255,255,255,.65); pointer-events: none; }
+  .slot .recycle { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 22px; color: rgba(255,255,255,.72); }
+  .slot .count { position: absolute; right: 3px; bottom: 3px; min-width: 18px; height: 18px; padding: 0 4px;
+    border-radius: 10px; background: #FFFFFF; color: var(--g-text);
     font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center;
-  }
-  .cols { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+    box-shadow: 0 1px 3px rgba(0,0,0,.25); }
+  .cols { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; align-items: start; }
   .col { position: relative; min-width: 0; --step: 22px; }
   .col.has-cards { padding-bottom: calc((var(--n) - 1) * var(--step)); }
+  /* 高度占位：列末补一张隐形牌，把最后一张牌的牌高撑进列高，牌堆不再溢出压到提示行 */
+  .col.has-cards::after { content: ""; display: block; aspect-ratio: 5 / 7; }
   .col-empty {
-    aspect-ratio: 5 / 7; border-radius: 10px; border: 1px dashed var(--g-border);
-    background: var(--g-surface2); display: flex; align-items: center; justify-content: center;
-    color: var(--g-muted); font-size: 14px;
+    aspect-ratio: 5 / 7; border-radius: 10px;
+    background: var(--g-sol-cell); border: 1px solid rgba(255,255,255,.16);
+    box-shadow: inset 0 2px 6px rgba(0,0,0,.28);
+    display: flex; align-items: center; justify-content: center;
+    color: rgba(255,255,255,.85); font-size: 18px; font-weight: 700;
   }
-  /* 牌面 */
+  /* 牌面：渐变 + 左上高光 + 投影的轻立体（--i 叠放序，--d 发牌序） */
   .card {
     position: absolute; left: 0; right: 0; aspect-ratio: 5 / 7;
-    border-radius: 10px; background: var(--g-surface); border: 1px solid var(--g-border);
-    box-shadow: var(--g-shadow); color: var(--g-text); cursor: pointer; overflow: hidden;
+    border-radius: 10px;
+    background: linear-gradient(165deg, var(--g-sol-face1), var(--g-sol-face2));
+    border: 1px solid var(--g-border);
+    box-shadow: var(--g-shadow);
+    color: var(--g-text); cursor: pointer; overflow: hidden;
+    transition: transform .16s ease-out, box-shadow .16s ease-out;
+  }
+  /* 轻立体高光：恒亮小元素，深浅通用 */
+  .card::before {
+    content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+    background: radial-gradient(85% 55% at 26% 10%, rgba(255,255,255,.34), rgba(255,255,255,0) 62%);
   }
   .col .card { top: calc(var(--i) * var(--step)); }
   .slot .card { inset: 0; }
   .card.red { color: var(--g-danger); }
+  .card .rk { position: absolute; top: 3px; left: 5px; font-size: 14px; font-weight: 700; line-height: 1; pointer-events: none; }
+  .card .st { position: absolute; top: 18px; left: 5px; font-size: 12px; line-height: 1; pointer-events: none; }
+  .card .cen { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 28px; line-height: 1; pointer-events: none; }
+  .card .swi { display: block; }
+  /* 牌背：品牌绿渐变 + 斜纹 + 高光，与明牌形成材质对比 */
   .card.down {
-    background: repeating-linear-gradient(45deg, var(--g-primary-soft), var(--g-primary-soft) 5px, var(--g-surface) 5px, var(--g-surface) 10px);
-    border-color: var(--g-primary);
+    background:
+      radial-gradient(120% 90% at 50% 0%, rgba(255,255,255,.22), rgba(255,255,255,0) 55%),
+      repeating-linear-gradient(45deg, rgba(255,255,255,.10) 0 5px, rgba(255,255,255,0) 5px 10px),
+      linear-gradient(160deg, var(--g-sol-back1), var(--g-sol-back2));
+    border: 1px solid rgba(255,255,255,.28);
     display: flex; align-items: center; justify-content: center;
-    font-size: 22px; color: var(--g-primary);
   }
-  .card.down .swi { opacity: .55; }
-  .card .rk { position: absolute; top: 3px; left: 5px; font-size: 14px; font-weight: 700; line-height: 1; }
-  .card .st { position: absolute; top: 18px; left: 5px; font-size: 12px; line-height: 1; }
-  .card .cen { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 28px; line-height: 1; }
-  .card[data-sel="1"] { outline: 2px solid var(--g-primary); outline-offset: 1px; }
+  .card.down::before { opacity: .5; }
+  .card.down .bm { font-size: 22px; line-height: 1; color: rgba(255,255,255,.58); pointer-events: none; }
+  /* 选中：浮起 + 品牌绿环 + 深投影（160ms ease-out） */
+  .card[data-sel="1"] {
+    transform: translateY(-3px); z-index: 3;
+    border-color: var(--g-primary);
+    box-shadow: 0 0 0 2px var(--g-primary), 0 10px 18px rgba(20,40,30,.20);
+    animation: sellift .16s ease-out;
+  }
+  @keyframes sellift { from { transform: translateY(0); } to { transform: translateY(-3px); } }
+  .card:active { transform: scale(.96); }
+  .card[data-sel="1"]:active { transform: translateY(-3px) scale(.96); }
+  /* 入场错落：发牌序 --d，32ms 间隔（30-50ms 区间） */
+  .board.entering .card { animation: deal .34s cubic-bezier(.2,.7,.3,1) backwards; animation-delay: calc(var(--d, 0) * 32ms); }
+  @keyframes deal { from { opacity: 0; transform: translateY(-12px) scale(.92); } to { opacity: 1; transform: none; } }
+  /* 归位 / 落到列顶：轻弹；翻牌：180ms 侧翻（状态变化 120-200ms ease-out） */
+  .card.pop { animation: cardpop .2s ease-out; }
+  @keyframes cardpop { 0% { transform: scale(.9); opacity: .55; } 100% { transform: scale(1); opacity: 1; } }
+  .card.flip { animation: flip .18s ease-out; }
+  @keyframes flip { from { transform: perspective(400px) rotateY(86deg); } to { transform: perspective(400px) rotateY(0); } }
   .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; font-weight: 500; color: var(--g-muted); text-align: center; }
   .msg.err { color: var(--g-danger); }
   .msg.win { color: var(--g-success); }
@@ -92,7 +145,8 @@
     background: var(--g-scrim);
     display: none; align-items: center; justify-content: center; padding: 20px;
   }
-  .overlay.show { display: flex; }
+  .overlay.show { display: flex; animation: fadein .2s ease-out; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
   .panel {
     width: 100%; max-width: 320px; padding: 22px 18px;
     background: var(--g-surface); border-radius: var(--g-radius);
@@ -100,13 +154,18 @@
     animation: pop .25s ease-out;
   }
   @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  /* 过关反馈：轻弹（失败 / 非胜局不挂 .win，保持克制） */
+  .panel.win { animation: winpop .45s cubic-bezier(.18,.9,.3,1.4); }
+  @keyframes winpop { 0% { transform: scale(.86); opacity: 0; } 62% { transform: scale(1.045); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
   .panel h2 { margin: 0 0 6px; font-size: 18px; }
   .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.7; }
-  .panel .desc b { color: var(--g-primary-deep); }
+  .panel .desc b { color: var(--g-primary-deep); font-size: 22px; }
+  /* 第二色相：过关数据的用时 / 步数用暖金，与绿色壳分层 */
+  .panel.win .desc b { color: var(--g-warning); }
   .panel .btn { width: 100%; }
 
-  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（§6.1 模板：时长与延迟同时归零） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; animation-delay:0ms !important; transition-duration:.01ms !important} }
 
   /* P2: 键盘焦点可见（S5） */
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
@@ -117,6 +176,7 @@ window.SW_ICON=function(n,s){s=s||"";var P={
  'arrow-right':'<path d="M5 12h14M13 6l6 6-6 6"/>','arrow-left':'<path d="M19 12H5M11 6l-6 6 6 6"/>',
  'arrow-up':'<path d="M12 19V5M6 11l6-6 6 6"/>','arrow-down':'<path d="M12 5v14M6 13l6 6 6-6"/>',
  'rotate':'<path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/>',
+ 'reset':'<path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/>',
  'check':'<path d="M4 12.5l5 5L20 6.5"/>','x':'<path d="M6 6l12 12M18 6L6 18"/>',
  'star':'<path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/>',
  'star-o':'<path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/>',
@@ -159,18 +219,20 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
       <div class="slot" data-zone="stock" id="slotStock"></div>
       <div class="slot" data-zone="waste" id="slotWaste"></div>
       <div class="slot ghost" aria-hidden="true"></div>
-      <div class="slot fnd empty" data-zone="fnd" data-f="0" id="fnd0"></div>
-      <div class="slot fnd empty" data-zone="fnd" data-f="1" id="fnd1"></div>
-      <div class="slot fnd empty" data-zone="fnd" data-f="2" id="fnd2"></div>
-      <div class="slot fnd empty" data-zone="fnd" data-f="3" id="fnd3"></div>
+      <div class="fndzone">
+        <div class="slot fnd empty" data-zone="fnd" data-f="0" id="fnd0"></div>
+        <div class="slot fnd empty" data-zone="fnd" data-f="1" id="fnd1"></div>
+        <div class="slot fnd empty" data-zone="fnd" data-f="2" id="fnd2"></div>
+        <div class="slot fnd empty" data-zone="fnd" data-f="3" id="fnd3"></div>
+      </div>
     </div>
     <div class="cols" id="cols"></div>
   </div>
-  <p class="msg" id="msg" role="status" aria-live="polite">点牌库翻牌；点明牌选中，再点目标堆</p>
-  <p class="foot">红黑交替 · 点数递减叠放 · 空列仅可放 K · foundation 同花色从 A 递增</p>
+  <p class="msg" id="msg" role="status" aria-live="polite">点左上牌库翻牌；点明牌选中，再点目标堆；双击明牌直接归位</p>
+  <p class="foot">红黑交替 · 点数递减叠放 · 空列仅可放 K · 右侧目标区同花色从 A 收满</p>
 </div>
 <div class="overlay" role="dialog" aria-modal="true" id="overlay">
-  <div class="panel">
+  <div class="panel" id="panel">
     <h2 id="ovTitle">通关！</h2>
     <p class="desc" id="ovDesc"></p>
     <button class="btn" id="ovBtn">再来一局</button>
@@ -181,7 +243,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
 "use strict";
 /* ---------- 常量与工具 ---------- */
 var RANKS=["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
-var SUITS=["\u2660","\u2665","\u2666","\u2663"]; /* 0 黑桃 1 红桃 2 方块 3 梅花（文本牌名，转义书写） */
+var SUITS=["♠","♥","♦","♣"]; /* 0 黑桃 1 红桃 2 方块 3 梅花（文本牌名，转义书写） */
 var SUIT_NAMES=["spade","heart","diamond","club"];
 var SUIT_PATHS={
   spade:'<path d="M12 3c3 4 6 6.5 6 10a3.5 3.5 0 0 1-6 2.4V19h-2v-3.6A3.5 3.5 0 0 1 6 13c0-3.5 3-6 6-10z"/>',
@@ -266,8 +328,10 @@ var stock=[],waste=[],fnd=[[],[],[],[]],tab=[[],[],[],[],[],[],[]];
 var sel=null,moves=0,won=false;
 var started=false,t0=0,accum=0,running=false,timerId=null;
 var lastTap={key:"",t:0};
+var enterTimer=null;
+var prevStock=null,prevWaste=null,prevFnd=[null,null,null,null],prevColTop=[],prevColUp=[];
 var els={};
-["board","slotStock","slotWaste","fnd0","fnd1","fnd2","fnd3","cols","msg","stTime","stMoves","stWins","stBest","overlay","ovTitle","ovDesc","ovBtn","btnNew"].forEach(function(id){els[id]=$(id)});
+["board","slotStock","slotWaste","fnd0","fnd1","fnd2","fnd3","cols","msg","stTime","stMoves","stWins","stBest","overlay","panel","ovTitle","ovDesc","ovBtn","btnNew"].forEach(function(id){els[id]=$(id)});
 var colEls=[];
 /* ---------- 计时（切后台自动暂停） ---------- */
 function startTimer(){if(started||won)return;started=true;t0=Date.now();running=true;if(!timerId)timerId=setInterval(tick,250)}
@@ -295,7 +359,11 @@ function newGame(){
   sel=null;moves=0;won=false;started=false;accum=0;running=false;
   if(timerId){clearInterval(timerId);timerId=null}
   save.played++;persist();
-  say("点牌库翻牌；点明牌选中，再点目标堆");
+  say("点左上牌库翻牌；点明牌选中，再点目标堆；双击明牌直接归位");
+  /* 入场错落：仅发牌这次挂 entering，动画结束后摘除（reduce 用户 80ms 即落定） */
+  els.board.classList.add("entering");
+  if(enterTimer)clearTimeout(enterTimer);
+  enterTimer=setTimeout(function(){els.board.classList.remove("entering");enterTimer=null},window.__gRM?80:1500);
   render();
 }
 /* ---------- 选中 ---------- */
@@ -391,52 +459,69 @@ function checkWin(){
   els.ovDesc.innerHTML="用时 <b>"+fmt(t)+"</b> · 步数 <b>"+moves+"</b><br>"
     +(isNew?"新纪录！最佳 <b>"+fmt(t)+"</b>":"最佳纪录 "+fmt(save.bestTime))
     +"<br>战绩 "+save.wins+" 胜 / "+save.played+" 场";
+  ovBtnLabel("rotate","再来一局");
   els.overlay.classList.add("show");
   render();
 }
 /* ---------- 渲染 ---------- */
-function cardHtml(c,down,attrs){
+function cardHtml(c,down,attrs,extra){
   var a=attrs||"";
-  if(down)return'<div class="card down"'+a+'>'+suitSvg(c.s)+'</div>';
-  return'<div class="card'+(isRed(c)?" red":"")+'"'+a+'>'
+  var cls="card"+(down?" down":(isRed(c)?" red":""));
+  if(extra)cls+=" "+extra;
+  if(down)return'<div class="'+cls+'"'+a+'><span class="bm">'+suitSvg(c.s)+'</span></div>';
+  return'<div class="'+cls+'"'+a+'>'
     +'<span class="rk">'+RANKS[c.r]+'</span>'
     +'<span class="st">'+suitSvg(c.s)+'</span>'
     +'<span class="cen">'+suitSvg(c.s)+'</span></div>';
 }
+/* 覆盖层主按钮：文字前带内联 SVG 图标（aria-hidden 由 SW_ICON 保证） */
+function ovBtnLabel(icon,label){els.ovBtn.innerHTML=SW_ICON(icon)+label}
 function render(){
-  var s=els.slotStock;
-  if(stock.length){
+  var entering=els.board.classList.contains("entering");
+  var s=els.slotStock,st=stock.length?stock[stock.length-1]:null;
+  if(st){
     s.className="slot";
-    s.innerHTML=cardHtml(stock[stock.length-1],true)+'<span class="count">'+stock.length+'</span>';
+    s.innerHTML=cardHtml(st,true,' style="--d:0"',(prevStock!==st&&!entering)?"pop":null)+'<span class="count">'+stock.length+'</span>';
   }else{
     s.className="slot empty";
     s.innerHTML=waste.length?'<span class="recycle">'+SW_ICON('rotate')+'</span>':'';
   }
+  prevStock=st;
   var w=els.slotWaste;
   if(waste.length){
+    var wt=waste[waste.length-1];
     w.className="slot";
-    w.innerHTML=cardHtml(waste[waste.length-1],false,' data-zone="waste"');
+    w.innerHTML=cardHtml(wt,false,' data-zone="waste" style="--d:1"'+(sel&&sel.type==="waste"?' data-sel="1"':""),(prevWaste!==wt&&!entering)?"pop":null);
   }else{
     w.className="slot empty";
     w.innerHTML="";
   }
+  prevWaste=waste.length?waste[waste.length-1]:null;
   for(var i=0;i<4;i++){
-    var f=els["fnd"+i],pile=fnd[i];
+    var f=els["fnd"+i],pile=fnd[i],top=pile.length?pile[pile.length-1]:null;
     f.className="slot fnd"+(pile.length?"":" empty");
-    f.innerHTML=pile.length?cardHtml(pile[pile.length-1],false):'<span class="wm">'+suitSvg(i)+'</span>';
+    f.innerHTML=pile.length?cardHtml(top,false,' style="--d:'+(2+i)+'"',(prevFnd[i]!==top&&!entering)?"pop":null):'<span class="wm">'+suitSvg(i)+'</span>';
+    prevFnd[i]=top;
   }
-  for(var k=0;k<7;k++)renderCol(k);
+  for(var k=0;k<7;k++)renderCol(k,entering);
+  els.panel.classList.toggle("win",won);
   syncHud();
 }
-function renderCol(i){
+function renderCol(i,entering){
   var el=colEls[i],col=tab[i],h="";
+  var top=col.length?col[col.length-1]:null;
+  var fresh=!entering&&top&&prevColTop[i]!==top;
+  var flipped=!entering&&top&&top.up&&prevColUp[i]===false;
+  prevColTop[i]=top;prevColUp[i]=top?top.up:false;
   if(col.length){
     el.className="col has-cards";
     el.style.setProperty("--n",col.length);
     for(var j=0;j<col.length;j++){
       var c=col[j];
       var on=sel&&sel.type==="col"&&sel.col===i&&j>=sel.idx&&c.up;
-      h+=cardHtml(c,!c.up,' data-col="'+i+'" data-idx="'+j+'" style="--i:'+j+'"'+(on?' data-sel="1"':""));
+      var ex=null;
+      if(j===col.length-1){if(flipped)ex="flip";else if(fresh)ex="pop";}
+      h+=cardHtml(c,!c.up,' data-col="'+i+'" data-idx="'+j+'" style="--i:'+j+';--d:'+(10+i*3+j)+'"'+(on?' data-sel="1"':""),ex);
     }
   }else{
     el.className="col";
@@ -559,6 +644,13 @@ syncSaveFromServer();
     el.addEventListener("keydown",function(e){trap(el,e)});
   }
   for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+<script>
+/* 工具按钮图标：内联 SVG（SW_ICON，24 viewBox / currentColor），零外链 */
+(function(){
+  document.getElementById("btnNew").insertAdjacentHTML("afterbegin",SW_ICON("reset"));
+  document.getElementById("ovBtn").innerHTML=SW_ICON("rotate")+"再来一局";
 })();
 </script>
 </body>

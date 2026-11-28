@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#F5F6F3">
 <title>播棋</title>
 <style>
-  /*token:GAME-THEME.md §2 基线（值与基线一致），棋盘/种子全部复用结构 token，无自造素材 token*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light }
-  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
+  /*token:GAME-THEME.md §2 基线（值与基线一致）+ §3 素材 token（棋盘木面 / 坑槽 / 四色玻璃种子）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-on-primary:#FFFFFF;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-mnc-board1:#E8C88F;--g-mnc-board2:#C9A468;--g-mnc-pit:#9C7740;--g-mnc-pit-hi:#F2DDB4;--g-mnc-seed1:#E14E63;--g-mnc-seed2:#2F8FD6;--g-mnc-seed3:#E09A22;--g-mnc-seed4:#7C5CD6;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-mnc-board1:#4A3F2C;--g-mnc-board2:#2C2517;--g-mnc-pit:#1E1910;--g-mnc-pit-hi:#6B5B3E;--g-mnc-seed1:#F27A8C;--g-mnc-seed2:#6BB4DE;--g-mnc-seed3:#E2A44E;--g-mnc-seed4:#A48AE8;color-scheme:dark }
 
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
@@ -24,40 +24,68 @@
   }
   .wrap { width: 100%; max-width: 480px; }
   header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
-  .sub { font-size: 14px; color: var(--g-muted); }
+  .sub { font-size: 14px; color: var(--g-muted); line-height: 1.4; }
   .stats { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat { flex: 1; min-width: 0; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
   .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
   .stat .val.low { color: var(--g-danger); }
   .stage { position: relative; }
-  canvas { display: block; width: 100%; touch-action: none; border-radius: var(--g-radius-inner); }
-  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  canvas { display: block; width: 100%; touch-action: none; border-radius: var(--g-radius-inner); box-shadow: var(--g-shadow); }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; font-weight: 500; color: var(--g-muted); text-align: center; }
   .tools { display: flex; gap: 8px; margin-bottom: 8px; }
-  .btn { min-height: 44px; padding: 0 8px; flex: 1; border: 0; border-radius: var(--g-radius-btn); background: var(--g-surface2); color: var(--g-text); font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer; }
-  .btn:active { opacity: .85; }
+  .btn {
+    min-height: 44px; padding: 0 10px; flex: 1;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-surface2); color: var(--g-text);
+    font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    transition: transform .14s ease-out, opacity .16s ease-out, background .16s ease-out;
+  }
+  .btn.primary { background: var(--g-btn-primary); color: var(--g-on-primary); }
+  .btn:active { transform: scale(.96); }
   .btn:disabled { opacity: .35; }
+  .swi { display: inline-block; vertical-align: -0.14em; flex: none; }
   .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
   .overlay { position: fixed; inset: 0; z-index: 10; background: var(--g-scrim); display: none; align-items: center; justify-content: center; padding: 20px; }
   .overlay.show { display: flex; animation: fadein .2s ease-out; }
   @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
-  .panel { width: 100%; max-width: 340px; padding: 22px 18px; background: var(--g-surface); border-radius: var(--g-radius); box-shadow: var(--g-shadow); text-align: center; animation: pop .25s ease-out; }
-  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel { width: 100%; max-width: 340px; padding: 22px 18px; background: var(--g-surface); border-radius: var(--g-radius); box-shadow: var(--g-shadow); text-align: center; animation: pop .3s ease-out; }
+  @keyframes pop { 0% { transform: scale(.9); opacity: 0; } 60% { transform: scale(1.03); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+  /* 过关轻弹：得分/过关的「轻弹」反馈（失败/选关不挂 .win，保持克制） */
+  .panel.win { animation: winpop .45s cubic-bezier(.18,.9,.3,1.4); }
+  @keyframes winpop { 0% { transform: scale(.86); opacity: 0; } 62% { transform: scale(1.045); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
   .panel h2 { margin: 0 0 6px; font-size: 18px; }
-  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.7; }
+  .panel .desc b { color: var(--g-primary-deep); }
+  .panel.win .desc b { color: var(--g-warning); }
   .panel .btn { width: 100%; margin-bottom: 8px; }
   .panel .btn:last-child { margin-bottom: 0; }
   .lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; max-height: 300px; overflow-y: auto; }
-  .lvbtn { min-height: 44px; border: 0; border-radius: var(--g-radius-inner); background: var(--g-surface2); color: var(--g-text); font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer; }
+  .lvbtn { min-height: 44px; border: 0; border-radius: var(--g-radius-inner); background: var(--g-surface2); color: var(--g-text); font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer; transition: transform .12s ease-out, background .16s ease-out; }
+  .lvbtn:active { transform: scale(.96); }
   .lvbtn[disabled] { opacity: .35; }
   .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
 
-  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效 */
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效与延迟（§6.1 模板） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; animation-delay:0ms !important; transition-duration:.01ms !important} }
 
-  /* P2: 键盘焦点可见 */
+  /* P2: 键盘焦点可见（S5） */
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 </style>
+<script>
+/* SW 图标库：内联 SVG 图标（24 viewBox / fill=currentColor / aria-hidden），结构照抄本库 window.SW_ICON（pyramid-sol 同构）。零外链。 */
+window.SW_ICON=function(n,s){s=s||"";var R='<path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/>',P={
+ 'arrow-right':'<path d="M5 12h14M13 6l6 6-6 6"/>',
+ 'rotate':R,'reset':R,
+ 'undo':'<path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/>',
+ 'hint':'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.8.8 1 1.6 1 2.5h6c0-.9.2-1.7 1-2.5A6 6 0 0 0 12 3z"/>',
+ 'grid':'<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>',
+ 'x':'<path d="M6 6l12 12M18 6L6 18"/>'
+};
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+(P[n]||"")+'</svg>';
+};
+</script>
 <script>
 //主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
 (function(){
@@ -91,7 +119,7 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
   <p class="foot">键盘：数字 1-6 选你左起第几坑 · U 悔棋 · H 提示 · R 重开 · 先清空己方坑并收多粮者胜 · 40 关 · 进度自动保存</p>
 </div>
 <div class="overlay" role="dialog" aria-modal="true" id="overlay">
-  <div class="panel">
+  <div class="panel" id="panel">
     <h2 id="ovTitle">过关！</h2>
     <p class="desc" id="ovDesc"></p>
     <div class="lvgrid" id="lvgrid" hidden></div>
@@ -223,7 +251,9 @@ function openLevelSelect(){
   }
   $("ovTitle").textContent="选择关卡";
   $("ovDesc").textContent="已通关的关卡会标绿";
-  $("ovBtn").textContent="取消";$("overlay").classList.add("show");
+  $("ovBtn").innerHTML=SW_ICON("x")+"取消";
+  $("panel").classList.remove("win");
+  $("overlay").classList.add("show");
 }
 function hideOverlay(){$("overlay").classList.remove("show")}
 /* ---------- 规则引擎（纯函数；arr=坑+仓序列，玩家坑 0..n-1/仓 n，电脑坑 n+1..2n/仓 2n+1） ---------- */
@@ -321,7 +351,7 @@ function aiPick(arr,n,side,skill){
   }
   return scored[0].p;
 }
-/* ---------- 调色板 ---------- */
+/* ---------- 调色板（canvas 颜色一律读 CSS 变量，JS 内零颜色字面量） ---------- */
 var PAL={};
 function palLoad(){
   var s=getComputedStyle(document.documentElement);
@@ -329,14 +359,33 @@ function palLoad(){
   PAL={bg:v("--g-bg"),surface:v("--g-surface"),surface2:v("--g-surface2"),border:v("--g-border"),
     text:v("--g-text"),muted:v("--g-muted"),faint:v("--g-faint"),
     primary:v("--g-primary"),deep:v("--g-primary-deep"),soft:v("--g-primary-soft"),onSoft:v("--g-on-soft"),
-    danger:v("--g-danger"),warning:v("--g-warning"),success:v("--g-success")};
+    danger:v("--g-danger"),warning:v("--g-warning"),success:v("--g-success"),
+    board1:v("--g-mnc-board1"),board2:v("--g-mnc-board2"),pit:v("--g-mnc-pit"),pitHi:v("--g-mnc-pit-hi"),
+    seeds:[v("--g-mnc-seed1"),v("--g-mnc-seed2"),v("--g-mnc-seed3"),v("--g-mnc-seed4")]};
 }
 window.__gOnTheme=function(){palLoad();drawNow()};
+/* ---------- 颜色工具：仅由 PAL 色值混合出明暗（恒暗 / 恒白为阴影与高光） ---------- */
+var BLACK="rgb(0,0,0)",WHITE="rgb(255,255,255)";   // 恒暗 / 恒白
+function colParse(c){
+  c=String(c).trim();
+  if(c.charAt(0)==="#")c=c.slice(1);
+  if(c.length===3)c=c.charAt(0)+c.charAt(0)+c.charAt(1)+c.charAt(1)+c.charAt(2)+c.charAt(2);
+  if(c.length===6)return[parseInt(c.slice(0,2),16),parseInt(c.slice(2,4),16),parseInt(c.slice(4,6),16)];
+  var m=c.match(/(\d+)[,\s]+(\d+)[,\s]+(\d+)/);
+  return m?[+m[1],+m[2],+m[3]]:[0,0,0];
+}
+function colMix(a,b,t){
+  var A=colParse(a),B=colParse(b);
+  return "rgb("+Math.round(A[0]+(B[0]-A[0])*t)+","+Math.round(A[1]+(B[1]-A[1])*t)+","+Math.round(A[2]+(B[2]-A[2])*t)+")";
+}
+function colShade(c,t){return colMix(c,t<0?BLACK:WHITE,t<0?-t:t)}
 /* ---------- 状态 ---------- */
 var lv=save.lv,L=null,n=6,arr=null,turn=0,over=false,won=false;
 var aiTimer=null,hist=[],hintP=-1,lastMove=-1,moves=0;
 var cv=document.getElementById("cv"),ctx=cv.getContext("2d");
-var W=460,H=230,pw=60;
+var W=460,H=178,pad=12,labelH=18,storeW=46,gap=8,step=54,pitW=46,pitH=44,midGap=26,dpr=1;
+/* 渲染层动效状态：入场错落起点 / 按下反馈 / 高亮与末手出现时刻（不触碰玩法逻辑） */
+var enterStart=0,pressIdx=-1,pressT=0,hintT=0,lastT=0;
 function $(id){return document.getElementById(id)}
 function say(t){$("msg").textContent=t}
 function loadLevel(k){
@@ -349,6 +398,8 @@ function loadLevel(k){
   $("lvRule").textContent=n+" 坑 × "+L.seeds+" 籽 · 电脑段位 "+L.skill+(L.first?" · 电脑先手":"");
   $("stLv").textContent=(lv+1)+"/"+LEVELS.length;
   arr=initArr(n,L.seeds);turn=L.first;over=false;won=false;hist=[];hintP=-1;lastMove=-1;moves=0;
+  enterStart=performance.now();pressIdx=-1;hintT=0;lastT=0;
+  $("panel").classList.remove("win");
   updStats();resize();drawNow();
   if(turn===1)aiTurn();
   else say("点自己一坑播种；末子入己仓可再播一次，末子落己方空坑可收割对坑");
@@ -359,7 +410,7 @@ function updStats(){
 }
 function snapshot(){hist.push(arr.slice());if(hist.length>60)hist.shift()}
 function finishPly(side,res){
-  moves++;lastMove=res.last;hintP=-1;
+  moves++;lastMove=res.last;lastT=performance.now();hintP=-1;
   var fa=finalArr(arr,n);
   if(fa){
     arr=fa;updStats();drawNow();
@@ -406,87 +457,180 @@ function endMatch(w){
   if(w&&GB.available)GB.reportScore(GAME_KEY,{metricValue:lv+1,metricExtra:arr[n]}).catch(function(){});
   $("ovTitle").textContent=w?(lv>=LEVELS.length-1?"全部通关！":"过关！"):"败北";
   $("ovDesc").innerHTML=w?("你收 "+arr[n]+" 籽，电脑收 "+arr[2*n+1]+" 籽"+(lv<LEVELS.length-1?"<br>已解锁第 "+(lv+2)+" 关":"<br>40 关全部完成")):"电脑粮仓更多，多算几步再播。";
-  $("ovBtn").textContent=w?((lv>=LEVELS.length-1)?"回到第 1 关":"下一关"):"再战本关";
+  $("ovBtn").innerHTML=SW_ICON(w?((lv>=LEVELS.length-1)?"rotate":"arrow-right"):"reset")+
+    (w?((lv>=LEVELS.length-1)?"回到第 1 关":"下一关"):"再战本关");
+  $("panel").classList.toggle("win",!!w);
   $("overlay").classList.add("show");
 }
 function hint(){
   if(over||turn!==0)return;
   var p=aiPick(arr,n,0,4);
-  if(p>=0){hintP=p;say("提示：建议播高亮的坑");}
+  if(p>=0){hintP=p;hintT=performance.now();say("提示：建议播高亮的坑");}
   drawNow();
 }
-/* ---------- 绘制 ---------- */
+/* ---------- 绘制（渲染层：立体棋盘 / 轻立体种子 / 动效） ---------- */
 function resize(){
-  var w=cv.parentElement.clientWidth||460,dpr=Math.min(window.devicePixelRatio||1,2);
+  var w=cv.parentElement.clientWidth||460;
+  dpr=Math.min(window.devicePixelRatio||1,2);
   W=Math.round(w);
-  pw=Math.floor((W-40)/(n+2));
-  H=Math.floor(pw*2.4+40);
+  var area=Math.max(120,W-pad*2-storeW*2-gap*2);
+  step=area/n;
+  pitW=Math.max(28,step-8);
+  pitH=Math.max(44,Math.min(58,step*0.62));
+  midGap=Math.max(20,Math.round(pitH*0.58));
+  H=Math.round(pad+labelH+pitH+midGap+pitH+labelH+pad);
   cv.style.height=H+"px";
   cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);
   ctx.setTransform(dpr,0,0,dpr,0,0);
 }
 function pitXY(idx){
-  //布局：左仓=电脑仓；上排电脑坑(右→左)；右仓=玩家仓；下排玩家坑(左→右)，与逆时针播种方向一致
-  if(idx===n)return {x:W-44,y:40,w:34,h:H-80,store:0};    //玩家仓（右）
-  if(idx===2*n+1)return {x:10,y:40,w:34,h:H-80,store:1}; //电脑仓（左）
-  if(idx<n)return {x:44+idx*pw,y:H/2-14,w:pw-8,h:28,row:0};
-  return {x:44+(2*n-idx)*pw,y:24,w:pw-8,h:28,row:1};
+  //布局：左仓=电脑仓；上排电脑坑(右→左，与下排一一对位)；右仓=玩家仓；下排玩家坑(左→右）
+  var x0=pad+storeW+gap,ox=(step-pitW)/2;   //坑在格内水平居中，上下排共用同一 x 序列
+  if(idx===n)return {x:W-pad-storeW,y:pad+labelH-6,w:storeW,h:H-(pad+labelH)*2+12,store:0};    //玩家仓（右）
+  if(idx===2*n+1)return {x:pad,y:pad+labelH-6,w:storeW,h:H-(pad+labelH)*2+12,store:1};          //电脑仓（左）
+  if(idx<n)return {x:x0+idx*step+ox,y:H-pad-labelH-pitH,w:pitW,h:pitH,row:0};
+  return {x:x0+(2*n-idx)*step+ox,y:pad+labelH,w:pitW,h:pitH,row:1};
 }
-function seedDots(x,y,w,h,count,seedIdx){
-  var i;
-  for(i=0;i<count&&i<14;i++){
-    var hx=(seedIdx*31+i*17)%97/97;
-    var hy=(seedIdx*17+i*29)%89/89;
-    ctx.beginPath();
-    ctx.arc(x+4+hx*(w-8),y+4+hy*(h-8),2.6,0,7);
-    ctx.fill();
+function rr(x,y,w,h,r){
+  r=Math.min(r,w/2,h/2);
+  ctx.beginPath();ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();
+}
+function ell(x,y,rx,ry){ctx.beginPath();ctx.ellipse(x,y,rx,ry,0,0,Math.PI*2);}
+/* 单颗玻璃种子：径向渐变 + 恒白高光 + 恒黑投影（轻立体） */
+function drawSeed(x,y,r,ci,alpha){
+  var col=PAL.seeds[ci%4],al=alpha==null?1:alpha;
+  ctx.save();
+  ctx.globalAlpha=al;
+  ctx.shadowColor="rgba(0,0,0,0.32)";   // 恒黑阴影
+  ctx.shadowBlur=r*0.8;ctx.shadowOffsetY=r*0.38;
+  var g=ctx.createRadialGradient(x-r*0.34,y-r*0.40,r*0.14,x,y,r*1.05);
+  g.addColorStop(0,colShade(col,0.55));g.addColorStop(1,colShade(col,-0.30));
+  ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+  ctx.globalAlpha=al*0.9;ctx.fillStyle=WHITE;   // 恒白高光
+  ctx.beginPath();ctx.ellipse(x-r*0.34,y-r*0.42,r*0.28,r*0.16,-0.5,0,Math.PI*2);ctx.fill();
+  ctx.globalAlpha=1;
+}
+/* 坑内种子：按坑内尺寸与颗数自适应网格，count 颗全画下且可辨；超上限才回退计数徽标 */
+var SEED_CAP=30;
+function seedLayout(cx,cy,w,h,count,seedIdx,alpha){
+  if(count<=0)return false;
+  var shown=Math.min(count,SEED_CAP),cols=1,rows=1,best=-1,c,rws,cw,ch,cell,i,gx,gy;
+  for(c=1;c<=shown;c++){                 //选单元最大的网格（同单元取先遇到者，倾向宽>高）
+    rws=Math.ceil(shown/c);cw=w/c;ch=h/rws;cell=Math.min(cw,ch);
+    if(cell>best+0.01){best=cell;cols=c;rows=rws;}
+  }
+  var sx=w/cols*0.92,sy=h/rows*0.92;     //单元内留缝，避免种子相叠
+  var r=Math.max(2.4,Math.min(7,best*0.34));
+  for(i=0;i<shown;i++){
+    gx=i%cols;gy=Math.floor(i/cols);
+    drawSeed(cx+(gx-(cols-1)/2)*sx,cy+(gy-(rows-1)/2)*sy,r,(seedIdx*3+i)%4,alpha);
+  }
+  return count>shown;
+}
+/* 棋盘：木框「面」= 底托厚度 + 竖向渐变 + 顶部高光面（不用细线分界） */
+function drawBoard(){
+  ctx.fillStyle=colShade(PAL.board2,-0.35);rr(0,3,W,H,16);ctx.fill();
+  var g=ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,PAL.board1);g.addColorStop(1,PAL.board2);
+  ctx.fillStyle=g;rr(0,0,W,H,16);ctx.fill();
+  var g2=ctx.createLinearGradient(0,0,0,H*0.45);
+  g2.addColorStop(0,"rgba(255,255,255,0.26)");g2.addColorStop(1,"rgba(255,255,255,0)");
+  ctx.fillStyle=g2;rr(0,0,W,H,16);ctx.fill();
+}
+/* 坑槽：亮缘 + 内凹「面」+ 上缘内阴影 + 种子 + 状态环 */
+function drawPit(p,idx,now){
+  var cx=p.x+p.w/2,cy=p.y+p.h/2,a=1,dy=0,sc=1;
+  if(!window.__gRM&&enterStart){          // 入场错落：逐坑 40ms 落位
+    var pp=(now-enterStart-idx*40)/260;
+    if(pp<1){pp=Math.max(0,pp);a=pp;dy=(1-pp)*12;}
+  }
+  if(pressIdx===idx&&!window.__gRM){     // 按下反馈：scale .96 回弹
+    var q=(now-pressT)/140;
+    if(q<1)sc=1-0.04*Math.sin(Math.max(0,q)*Math.PI);
+  }
+  ctx.save();
+  ctx.translate(cx,cy+dy);ctx.scale(sc,sc);ctx.translate(-cx,-cy);
+  ctx.globalAlpha=a;
+  ctx.fillStyle=PAL.pitHi;ell(cx,cy,p.w/2,p.h/2);ctx.fill();
+  var g=ctx.createRadialGradient(cx,cy-p.h*0.10,p.h*0.10,cx,cy,p.w*0.60);
+  g.addColorStop(0,colShade(PAL.pit,0.18));g.addColorStop(1,colShade(PAL.pit,-0.42));
+  ell(cx,cy+1,p.w/2-1.6,p.h/2-1.6);ctx.fillStyle=g;ctx.fill();
+  ctx.strokeStyle="rgba(0,0,0,0.24)";ctx.lineWidth=2;   // 恒黑内阴影
+  ctx.beginPath();ctx.ellipse(cx,cy+1,p.w/2-2.4,p.h/2-2.4,0,Math.PI*1.06,Math.PI*1.94);ctx.stroke();
+  if(seedLayout(cx,cy,p.w-6,p.h-6,arr[idx],idx,a)){
+    //超限回退：表面色胶囊 + 主文本色数字（浅/深均 ≥4.5:1），不再裸字压坑底
+    var ct=""+arr[idx];ctx.font="700 12px sans-serif";
+    var bw=ctx.measureText(ct).width+10,bh=16,by=cy+p.h*0.30;
+    ctx.fillStyle=PAL.surface;rr(cx-bw/2,by-bh/2,bw,bh,8);ctx.fill();
+    ctx.fillStyle=PAL.text;ctx.fillText(ct,cx,by);
+  }
+  ctx.restore();ctx.globalAlpha=1;
+  if(turn===0&&idx<n&&arr[idx]>0&&!over){   // 可点高亮：品牌绿呼吸环 + 数字键位提示
+    var al=window.__gRM?0.9:0.72+0.22*Math.sin(now/280);
+    ctx.strokeStyle=PAL.primary;ctx.globalAlpha=al;ctx.lineWidth=2.5;
+    ell(cx,cy,p.w/2+2.5,p.h/2+2.5);ctx.stroke();ctx.globalAlpha=1;
+    ctx.fillStyle=PAL.text;ctx.font="700 12px sans-serif";
+    ctx.fillText(""+(idx+1),cx,p.y+p.h+9);
+  }
+  if(idx===hintP){                          // 提示：深绿环
+    ctx.strokeStyle=PAL.deep;ctx.lineWidth=3;
+    ell(cx,cy,p.w/2+4,p.h/2+4);ctx.stroke();
+  }
+  if(idx===lastMove){                       // 末手：浅一档深绿环
+    ctx.strokeStyle=PAL.deep;ctx.lineWidth=2;ctx.globalAlpha=0.55;
+    ell(cx,cy,p.w/2+5.5,p.h/2+5.5);ctx.stroke();ctx.globalAlpha=1;
   }
 }
-function draw(){
-  ctx.fillStyle=PAL.bg;ctx.fillRect(0,0,W,H);
-  var i;
-  for(i=0;i<2*n+2;i++){
-    var p=pitXY(i);
-    if(i===n||i===2*n+1){
-      ctx.fillStyle=PAL.primary;
-      ctx.beginPath();
-      var r=Math.min(10,p.w/2);
-      ctx.moveTo(p.x+r,p.y);ctx.arcTo(p.x+p.w,p.y,p.x+p.w,p.y+p.h,r);ctx.arcTo(p.x+p.w,p.y+p.h,p.x,p.y+p.h,r);
-      ctx.arcTo(p.x,p.y+p.h,p.x,p.y,r);ctx.arcTo(p.x,p.y,p.x+p.w,p.y,r);
-      ctx.closePath();ctx.fill();
-      ctx.fillStyle="#fff";   // 恒白：仓计数
-      ctx.font="700 18px sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";
-      ctx.fillText(""+arr[i],p.x+p.w/2,p.y+p.h/2);
-      continue;
-    }
-    ctx.fillStyle=PAL.surface2;
-    ctx.beginPath();ctx.ellipse(p.x+p.w/2,p.y+p.h/2,p.w/2,p.h/2,0,0,7);ctx.fill();
-    ctx.strokeStyle=PAL.border;ctx.lineWidth=1.5;
-    ctx.beginPath();ctx.ellipse(p.x+p.w/2,p.y+p.h/2,p.w/2,p.h/2,0,0,7);ctx.stroke();
-    ctx.fillStyle=PAL.warning;
-    seedDots(p.x,p.y,p.w,p.h,arr[i],i);
-    if(arr[i]>14){
-      ctx.fillStyle=PAL.text;ctx.font="700 12px sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";
-      ctx.fillText(""+arr[i],p.x+p.w/2,p.y+p.h/2);
-    }
-    if(i===lastMove){
-      ctx.strokeStyle=PAL.primary;ctx.lineWidth=2.5;
-      ctx.beginPath();ctx.ellipse(p.x+p.w/2,p.y+p.h/2,p.w/2+2,p.h/2+2,0,0,7);ctx.stroke();
-    }
-    if(i===hintP){
-      ctx.strokeStyle=PAL.deep;ctx.lineWidth=3;
-      ctx.beginPath();ctx.ellipse(p.x+p.w/2,p.y+p.h/2,p.w/2+3,p.h/2+3,0,0,7);ctx.stroke();
-    }
-    if(turn===0&&i<n&&arr[i]>0&&!over){
-      ctx.fillStyle=PAL.deep;
-      ctx.font="700 12px sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";
-      ctx.fillText("按 "+(i+1),p.x+p.w/2,p.y+p.h+10);
-    }
+/* 粮仓：仓体面 + 凹槽 + 恒白计数 + 竖排玻璃种子 */
+function drawStore(p,idx,now){
+  var cx=p.x+p.w/2,a=1,dy=0;
+  if(!window.__gRM&&enterStart){
+    var pp=(now-enterStart-40)/260;
+    if(pp<1){pp=Math.max(0,pp);a=pp;dy=(1-pp)*12;}
   }
-  ctx.fillStyle=PAL.muted;ctx.font="400 12px sans-serif";ctx.textAlign="left";ctx.textBaseline="middle";
-  ctx.fillText("电脑",10,14);
+  ctx.save();ctx.translate(0,dy);
+  ctx.globalAlpha=a;
+  ctx.fillStyle=colShade(PAL.board2,-0.18);rr(p.x,p.y,p.w,p.h,12);ctx.fill();
+  var g=ctx.createLinearGradient(0,p.y,0,p.y+p.h);
+  g.addColorStop(0,colShade(PAL.pit,0.10));g.addColorStop(1,colShade(PAL.pit,-0.40));
+  ctx.fillStyle=g;rr(p.x+3,p.y+3,p.w-6,p.h-6,10);ctx.fill();
+  ctx.strokeStyle="rgba(0,0,0,0.22)";ctx.lineWidth=2;   // 恒黑内阴影
+  rr(p.x+4,p.y+4,p.w-8,p.h-8,9);ctx.stroke();
+  ctx.fillStyle=WHITE;ctx.font="700 18px sans-serif";
+  ctx.fillText(""+arr[idx],cx,p.y+18);
+  var r=Math.max(3.2,Math.min(6,p.w*0.11)),cnt=Math.min(arr[idx],6),i;
+  for(i=0;i<cnt;i++){
+    var py=p.y+p.h-12-i*(r*2.3);
+    if(py<p.y+34)break;
+    drawSeed(cx,py,r,(idx+i)%4,a);
+  }
+  ctx.restore();ctx.globalAlpha=1;
+}
+function drawLabels(){
+  ctx.font="600 12px sans-serif";ctx.fillStyle=PAL.text;
+  ctx.textAlign="left";
+  ctx.fillText("电脑",pad,pad+5);
   ctx.textAlign="right";
-  ctx.fillText("你（左仓是你的粮仓）",W-10,H-10);
+  ctx.fillText("目标粮仓",W-pad,pad+5);
+  ctx.fillText("你",W-pad,H-pad-labelH/2);
+}
+function draw(now){
+  now=now||performance.now();
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.fillStyle=PAL.bg;ctx.fillRect(0,0,W,H);
+  ctx.textAlign="center";ctx.textBaseline="middle";
+  drawBoard();
+  var i,p;
+  p=pitXY(2*n+1);drawStore(p,2*n+1,now);   // 电脑仓（左）
+  p=pitXY(n);drawStore(p,n,now);           // 玩家仓（右）
+  for(i=0;i<2*n+2;i++){
+    if(i===n||i===2*n+1)continue;
+    p=pitXY(i);drawPit(p,i,now);
+  }
+  drawLabels();
 }
 function drawNow(){draw()}
 function loop(){draw(performance.now());requestAnimationFrame(loop)}
@@ -497,7 +641,7 @@ cv.addEventListener("pointerdown",function(e){
   e.preventDefault();
   for(var i=0;i<n;i++){
     var p=pitXY(i);
-    if(x>=p.x&&x<=p.x+p.w&&y>=p.y-8&&y<=p.y+p.h+8){playerPit(i);return;}
+    if(x>=p.x&&x<=p.x+p.w&&y>=p.y-8&&y<=p.y+p.h+8){pressIdx=i;pressT=performance.now();playerPit(i);return;}
   }
 });
 cv.addEventListener("pointercancel",function(){});
@@ -641,6 +785,17 @@ syncLevelsFromServer();syncSaveFromServer();
     el.addEventListener("keydown",function(e){trap(el,e)});
   }
   for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+
+<script>
+/* 工具按钮图标：内联 SVG（SW_ICON，24 viewBox / currentColor），与 pyramid-sol 工具栏同构；零外链 */
+(function(){
+  function $(id){return document.getElementById(id)}
+  $("btnUndo").insertAdjacentHTML("afterbegin",SW_ICON("undo"));
+  $("btnHint").insertAdjacentHTML("afterbegin",SW_ICON("hint"));
+  $("btnReset").insertAdjacentHTML("afterbegin",SW_ICON("reset"));
+  $("btnLv").insertAdjacentHTML("afterbegin",SW_ICON("grid"));
 })();
 </script>
 

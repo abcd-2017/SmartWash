@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#F5F6F3">
 <title>引水入渠</title>
 <style>
-  /*token:GAME-THEME.md §2 基线（值与基线一致）+ §3 素材 token（--g-st-* 为本作素材色，深色为同色相压暗变体）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-st-g0:#3E4640;--g-st-g1:#8C8F7E;--g-st-g2:#C4C2A8;--g-st-g3:#E7E0C2;--g-st-crop:#7FB86A;color-scheme:light }
-  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-st-g0:#1E2420;--g-st-g1:#3B4038;--g-st-g2:#4E4C3C;--g-st-g3:#5E583F;--g-st-crop:#4E7A3C;color-scheme:dark }
+  /*token:GAME-THEME.md §2 基线（值与基线一致）+ §3 素材 token（--g-wd-* 为本作素材色，深色为同色相压暗变体）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-on-primary:#FFFFFF;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-hairline:#EFF1EE;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-st-g0:#5E8C5A;--g-st-g1:#8AA86E;--g-st-g2:#B9C08A;--g-st-g3:#DCC9A0;--g-st-crop:#7FB86A;--g-wd-water1:#4A9FD4;--g-wd-water2:#2F8FD6;--g-wd-field1:#8FCB5E;--g-wd-field2:#5E9A4C;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-st-g0:#1E3320;--g-st-g1:#2A3D24;--g-st-g2:#3A4226;--g-st-g3:#4A442C;--g-st-crop:#4E7A3C;--g-wd-water1:#6BB4DE;--g-wd-water2:#4A9FD4;--g-wd-field1:#4E7A3C;--g-wd-field2:#3A5E2A;color-scheme:dark }
 
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
@@ -26,23 +26,29 @@
   header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
   .sub { font-size: 14px; color: var(--g-muted); }
   .stats { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 8px; text-align: center; line-height: 1.3; min-width: 0; animation: rise .38s ease-out both; }
+  .stat:nth-child(2) { animation-delay: 40ms; }
+  .stat:nth-child(3) { animation-delay: 80ms; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
-  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val { display: inline-block; font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
   .stat .val.low { color: var(--g-danger); }
-  .stage { position: relative; }
+  .stage { position: relative; animation: fadein .3s ease-out both; }
   canvas { display: block; width: 100%; touch-action: none; border-radius: var(--g-radius-inner); box-shadow: var(--g-shadow); }
   .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
   .tools { display: flex; gap: 8px; margin-bottom: 8px; }
   .btn {
-    min-height: 44px; padding: 0 14px; flex: 1;
+    min-height: 44px; padding: 0 10px; flex: 1;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
     border: 0; border-radius: var(--g-radius-btn);
     background: var(--g-surface2); color: var(--g-text);
     font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    transition: transform .14s ease-out, opacity .16s ease-out, background .16s ease-out;
   }
-  .btn.primary { background: var(--g-btn-primary); color: #fff; font-size: 16px; font-weight: 600; }
-  .btn:active { opacity: .85; }
+  .btn.primary { background: var(--g-btn-primary); color: var(--g-on-primary); }
+  .btn:active { transform: scale(.96); }
   .btn:disabled { opacity: .35; }
+  .swi { display: inline-block; vertical-align: -0.14em; flex: none; }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
   .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
   .overlay {
     position: fixed; inset: 0; z-index: 10;
@@ -67,28 +73,48 @@
     min-height: 44px; border: 0; border-radius: var(--g-radius-inner);
     background: var(--g-surface2); color: var(--g-text);
     font-family: inherit; font-size: 18px; font-weight: 700; cursor: pointer;
+    transition: transform .14s ease-out, background .16s ease-out;
   }
+  .lvbtn:active { transform: scale(.96); }
   .lvbtn[disabled] { opacity: .35; }
   .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
 
-  /* 动效敏感用户降级——保留状态切换，压平装饰动效（动效层指令，不受 §4 主题层 matchMedia 禁令约束） */
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  /* 动效敏感用户降级——保留状态切换，压平装饰动效（同时压 animation-duration 与 animation-delay） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; animation-delay:0ms !important; transition-duration:.01ms !important} }
 
   /* 键盘焦点可见 */
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 
-  .legend { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 2px 8px; }
-  .lg { font-size: 12px; color: var(--g-muted); background: var(--g-surface2); border-radius: 10px; padding: 2px 10px; }
+  .legend { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 2px 8px; animation: rise .38s ease-out both; animation-delay: 120ms; }
+  .lg-chip { display: inline-flex; align-items: center; gap: 5px; background: var(--g-surface2); border-radius: 10px; padding: 3px 9px; font-size: 12px; color: var(--g-muted); line-height: 1.3; }
+  .lg-chip b { color: var(--g-text); font-weight: 600; }
+  .lg-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
   .ops { display: flex; gap: 8px; }
   .ctl {
     flex: 1; min-height: 48px; border: 0; border-radius: var(--g-radius-btn);
-    background: var(--g-btn-primary); color: #fff;
+    background: var(--g-btn-primary); color: var(--g-on-primary);
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
     font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+    transition: transform .14s ease-out, opacity .16s ease-out, background .16s ease-out;
   }
-  .ctl:active { opacity: .75; }
+  .ctl:active { transform: scale(.96); }
   .ctl[disabled] { opacity: .45; }
 
 </style>
+<script>
+/* 内联图标库：照抄本库 window.SW_ICON 结构（24 viewBox / currentColor / aria-hidden / 零外链） */
+window.SW_ICON=function(n,s){s=s||"";var P={
+ 'undo':'<path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/>',
+ 'rotate':'<path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/>',
+ 'grid':'<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>',
+ 'play':'<path d="M8 5v14l11-7z"/>','x':'<path d="M6 6l12 12M18 6L6 18"/>',
+ 'bulb':'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.2 11c.8.6 1.2 1.5 1.2 2.4h4c0-.9.4-1.8 1.2-2.4A6 6 0 0 0 12 3z"/>',
+ 'drop':'<path d="M12 3s6 6.6 6 11a6 6 0 0 1-12 0c0-4.4 6-11 6-11z"/>'
+};
+var fill={'play':1,'drop':1};
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
+};
+</script>
 <script>
 //主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
 (function(){
@@ -112,7 +138,11 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
     <div class="stat"><span class="label">已用</span><span class="val" id="stUsed">0</span></div>
   </div>
   <div class="stage"><canvas id="cv" aria-label="引水入渠地形图" role="img"></canvas></div>
-  <div class="legend"><span class="lg">点格子挖土：高度 -1（数字=高度）</span><span class="lg">水从「源」出发只流向不高于当前水位的格子</span></div>
+  <div class="legend">
+    <span class="lg-chip"><span class="lg-dot" style="background:var(--g-wd-water1)"></span><b>水</b>·从「源」流向「田」</span>
+    <span class="lg-chip"><span class="lg-dot" style="background:var(--g-wd-field1)"></span><b>田</b>·目标</span>
+    <span class="lg-chip"><b>数字</b>·地形高度，点格挖低</span>
+  </div>
   <p class="msg" id="msg" role="status" aria-live="polite">挖出一条高度不升的沟，把水引到「田」</p>
   <div class="ops">
     <button class="ctl" id="btnFlow" type="button">放 水</button>
@@ -267,10 +297,11 @@ function openLevelSelect(){
   }
   $("ovTitle").textContent="选择关卡";
   $("ovDesc").textContent="已通关的关卡会标绿";
-  $("ovBtn").textContent="取消";
+  setOvBtn("取消","x");
   $("overlay").classList.add("show");
 }
 function hideOverlay(){$("overlay").classList.remove("show")}
+function setOvBtn(t,icon){$("ovBtn").innerHTML=window.SW_ICON(icon)+t}
 /* ---------- 结构校验 ---------- */
 function validLevelData(d){
   if(!d||typeof d!=="object"||Array.isArray(d))return false;
@@ -346,12 +377,34 @@ function palLoad(){
     text:v("--g-text"),muted:v("--g-muted"),deep:v("--g-primary-deep"),
     danger:v("--g-danger"),success:v("--g-success"),warning:v("--g-warning"),water:v("--g-water"),
     g:[v("--g-st-g0"),v("--g-st-g1"),v("--g-st-g2"),v("--g-st-g3")],
-    crop:v("--g-st-crop")};
+    crop:v("--g-st-crop"),
+    water1:v("--g-wd-water1"),water2:v("--g-wd-water2"),field1:v("--g-wd-field1"),field2:v("--g-wd-field2")};
 }
 window.__gOnTheme=function(){palLoad()};
+/* ---------- 颜色工具：仅由 PAL 色值混合出明暗，JS 内零颜色字面量 ---------- */
+var BLACK="rgb(0,0,0)",WHITE="rgb(255,255,255)";   // 恒暗 / 恒白（阴影与高光）
+function colParse(c){
+  c=String(c).trim();
+  if(c.charAt(0)==="#")c=c.slice(1);
+  if(c.length===3)c=c.charAt(0)+c.charAt(0)+c.charAt(1)+c.charAt(1)+c.charAt(2)+c.charAt(2);
+  if(c.length===6)return[parseInt(c.slice(0,2),16),parseInt(c.slice(2,4),16),parseInt(c.slice(4,6),16)];
+  var m=c.match(/(\d+)[,\s]+(\d+)[,\s]+(\d+)/);
+  return m?[+m[1],+m[2],+m[3]]:[0,0,0];
+}
+function colMix(a,b,t){
+  var A=colParse(a),B=colParse(b);
+  return "rgb("+Math.round(A[0]+(B[0]-A[0])*t)+","+Math.round(A[1]+(B[1]-A[1])*t)+","+Math.round(A[2]+(B[2]-A[2])*t)+")";
+}
+function colShade(c,t){return colMix(c,t<0?BLACK:WHITE,t<0?-t:t)}
+function rr(x,y,w,h,r){
+  r=Math.max(0,Math.min(r,w/2,h/2));
+  ctx.beginPath();ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();
+}
 /* ---------- 状态 ---------- */
 var lv=save.lv,L=null,height=[],history=[],used=0,cur=-1,done=false;
-var flowT=0,flowLayers=null,flowing=false;
+var flowT=0,flowLayers=null,flowing=false,enterT=0;
 var cv=document.getElementById("cv"),ctx=cv.getContext("2d");
 var W=0,H=0,dpr=1,w=5,h=5,cs=60;
 function $(id){return document.getElementById(id)}
@@ -362,7 +415,7 @@ function loadLevel(n2){
   L=LEVELS[lv];
   if(!validLevelData(L)){say("关卡数据异常");return}
   w=L.w;h=L.h;
-  height=L.hgt.slice();history=[];used=0;cur=-1;done=false;flowT=0;flowLayers=null;flowing=false;
+  height=L.hgt.slice();history=[];used=0;cur=-1;done=false;flowT=0;flowLayers=null;flowing=false;enterT=Date.now();
   $("lvTag").textContent="第 "+(lv+1)+" 关 · "+L.name;
   var ok=verifyLevel(L);   // 加载复核
   $("stBud").textContent=L.budget;
@@ -433,7 +486,7 @@ function winLevel(){
   if(GB.available)GB.reportScore(GAME_KEY,{metricValue:lv+1,metricExtra:used}).catch(function(){});
   $("ovTitle").textContent=(lv>=LEVELS.length-1)?"全部通关！":"水到田了！";
   $("ovDesc").innerHTML="第 "+(lv+1)+" 关完成 · 用了 "+used+"/"+L.budget+" 次挖掘"+(lv<LEVELS.length-1?"<br>已解锁第 "+(lv+2)+" 关":"<br>40 关全部完成");
-  $("ovBtn").textContent=(lv>=LEVELS.length-1)?"回到第 1 关":"下一关";
+  setOvBtn((lv>=LEVELS.length-1)?"回到第 1 关":"下一关",(lv>=LEVELS.length-1)?"rotate":"play");
   $("overlay").classList.add("show");
 }
 /* ---------- 绘制 ---------- */
@@ -448,30 +501,79 @@ function resize(){
 }
 function centerOf(i){var x=i%w,y=(i/w)|0;return {x:8+x*cs+cs/2,y:8+y*cs+cs/2}}
 function draw(){
-  ctx.fillStyle=PAL.bg;ctx.fillRect(0,0,W,H);
   if(!L)return;
+  var now=Date.now();
+  var stag=Math.max(4,Math.min(14,Math.floor(300/(w*h))));
+  // 底板「面」：渐变 + 落地投影
+  ctx.fillStyle=PAL.bg;ctx.fillRect(0,0,W,H);
+  var bgr=ctx.createLinearGradient(0,0,0,H);
+  bgr.addColorStop(0,PAL.surface);bgr.addColorStop(1,PAL.surface2);
+  ctx.save();
+  ctx.shadowColor="rgba(0,0,0,0.10)";ctx.shadowBlur=10;ctx.shadowOffsetY=3;
+  ctx.fillStyle=bgr;rr(0.5,0.5,W-1,H-1,10);ctx.fill();
+  ctx.restore();
   var f=flowLayers;
-  var shown=f&&flowing?Math.floor((Date.now()-flowT)/130):0;
+  var shown=f&&flowing?Math.floor((now-flowT)/130):0;
+  var gap=Math.max(1.5,cs*0.05),rad=Math.min(10,cs*0.2);
   for(var i=0;i<w*h;i++){
-    var p=centerOf(i),x=i%w,y=(i/w)|0;
-    ctx.fillStyle=PAL.g[height[i]];   // 素材地形色阶
-    ctx.fillRect(8+x*cs+2,8+y*cs+2,cs-4,cs-4);
-    ctx.strokeStyle=PAL.border;ctx.lineWidth=1;
-    ctx.strokeRect(8+x*cs+2.5,8+y*cs+2.5,cs-5,cs-5);
+    var x=i%w,y=(i/w)|0,px=8+x*cs,py=8+y*cs;
+    var p=window.__gRM?1:Math.max(0,Math.min(1,(now-enterT-(y*w+x)*stag)/180));
+    var cxp=px+cs/2,cyp=py+cs/2;
+    ctx.save();
+    ctx.globalAlpha=p;
+    ctx.translate(cxp,cyp);ctx.scale(0.85+0.15*p,0.85+0.15*p);ctx.translate(-cxp,-cyp);
+    // 地形砖：渐变「面」+ 顶光 + 落地投影
+    var base=PAL.g[height[i]];
+    ctx.save();
+    ctx.shadowColor="rgba(0,0,0,0.16)";ctx.shadowBlur=cs*0.07;ctx.shadowOffsetY=cs*0.03;
+    var g2=ctx.createLinearGradient(0,py+gap,0,py+cs-gap);
+    g2.addColorStop(0,colShade(base,0.14));g2.addColorStop(0.5,base);g2.addColorStop(1,colShade(base,-0.16));
+    ctx.fillStyle=g2;rr(px+gap,py+gap,cs-2*gap,cs-2*gap,rad);ctx.fill();
+    ctx.restore();
+    ctx.lineWidth=1;ctx.strokeStyle=colShade(base,-0.3);
+    rr(px+gap+0.5,py+gap+0.5,cs-2*gap-1,cs-2*gap-1,rad);ctx.stroke();
+    // 水层：渐变水面 + 恒白波峰线
     if(f&&(f.reached[i]&&(!flowing||f.layer[i]<=shown))){
-      ctx.globalAlpha=0.75;
-      ctx.fillStyle=PAL.water;
-      ctx.fillRect(8+x*cs+2,8+y*cs+2,cs-4,cs-4);
-      ctx.globalAlpha=1;
+      var wg=ctx.createLinearGradient(0,py+gap,0,py+cs-gap);
+      wg.addColorStop(0,PAL.water1);wg.addColorStop(1,PAL.water2);
+      ctx.save();ctx.globalAlpha=0.85;ctx.fillStyle=wg;rr(px+gap,py+gap,cs-2*gap,cs-2*gap,rad);ctx.fill();ctx.restore();
+      ctx.strokeStyle=WHITE;ctx.globalAlpha=0.55;ctx.lineWidth=Math.max(1,cs*0.03);
+      ctx.beginPath();ctx.moveTo(px+gap+2,py+gap+2.5);ctx.lineTo(px+cs-gap-2,py+gap+2.5);ctx.stroke();ctx.globalAlpha=1;
     }
-    ctx.fillStyle=i===L.src?PAL.water:(i===L.tgt?PAL.crop:(height[i]===0?"#fff":PAL.text));   // 素材田色；渠底深色块上恒白数字
-    ctx.font="700 "+Math.min(18,cs*0.3)+"px sans-serif";
-    ctx.textAlign="center";ctx.textBaseline="middle";
-    ctx.fillText(i===L.src?"源":(i===L.tgt?"田":String(height[i])),p.x,p.y);
+    if(i===L.src){
+      // 水源：矢量水滴（替代字符「源」）
+      ctx.fillStyle=PAL.water1;
+      ctx.beginPath();
+      ctx.moveTo(cxp,cyp-cs*0.2);
+      ctx.bezierCurveTo(cxp+cs*0.2,cyp-cs*0.02,cxp+cs*0.16,cyp+cs*0.2,cxp,cyp+cs*0.2);
+      ctx.bezierCurveTo(cxp-cs*0.16,cyp+cs*0.2,cxp-cs*0.2,cyp-cs*0.02,cxp,cyp-cs*0.2);
+      ctx.fill();
+      ctx.fillStyle=WHITE;ctx.globalAlpha=0.75;
+      ctx.beginPath();ctx.arc(cxp-cs*0.05,cyp+cs*0.05,Math.max(1.5,cs*0.045),0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;
+    }else if(i===L.tgt){
+      // 田：绿面渐变 + 金色目标环 + 矢量禾苗（替代字符「田」）
+      var fg=ctx.createLinearGradient(0,py+gap,0,py+cs-gap);
+      fg.addColorStop(0,PAL.field1);fg.addColorStop(1,PAL.field2);
+      ctx.fillStyle=fg;rr(px+gap,py+gap,cs-2*gap,cs-2*gap,rad);ctx.fill();
+      ctx.strokeStyle=PAL.warning;ctx.lineWidth=Math.max(2,cs*0.05);
+      rr(px+gap+1.5,py+gap+1.5,cs-2*gap-3,cs-2*gap-3,rad);ctx.stroke();
+      ctx.strokeStyle=PAL.deep;ctx.lineWidth=Math.max(1.5,cs*0.04);ctx.lineCap="round";
+      ctx.beginPath();ctx.moveTo(cxp,cyp+cs*0.18);ctx.lineTo(cxp,cyp-cs*0.1);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(cxp,cyp-cs*0.02);ctx.quadraticCurveTo(cxp-cs*0.16,cyp-cs*0.06,cxp-cs*0.18,cyp-cs*0.18);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(cxp,cyp-cs*0.02);ctx.quadraticCurveTo(cxp+cs*0.16,cyp-cs*0.06,cxp+cs*0.18,cyp-cs*0.18);ctx.stroke();
+      ctx.lineCap="butt";
+    }else{
+      ctx.fillStyle=height[i]===0?WHITE:PAL.text;
+      ctx.font="700 14px -apple-system,'PingFang SC','Microsoft YaHei',sans-serif";
+      ctx.textAlign="center";ctx.textBaseline="middle";
+      ctx.fillText(String(height[i]),cxp,cyp);
+    }
+    // 光标
     if(i===cur&&!done&&!flowing){
       ctx.strokeStyle=PAL.deep;ctx.lineWidth=2.5;
-      ctx.strokeRect(8+x*cs+3,8+y*cs+3,cs-6,cs-6);
+      rr(px+gap+1,py+gap+1,cs-2*gap-2,cs-2*gap-2,rad);ctx.stroke();
     }
+    ctx.restore();
   }
   if(flowing&&f){
     if(shown>f.maxLayer+2)finishFlow(f);
@@ -576,6 +678,14 @@ palLoad();loadLevel(save.lv);
 requestAnimationFrame(draw);
 verifyPending();syncLevelsFromServer();syncSaveFromServer();
 window.addEventListener("resize",resize);
+
+/* 工具按钮图标：内联 SVG（SW_ICON，24 viewBox / currentColor），文字前带图标 */
+$("btnFlow").insertAdjacentHTML("afterbegin",window.SW_ICON("drop"));
+$("btnUndo").insertAdjacentHTML("afterbegin",window.SW_ICON("undo"));
+$("btnHint").insertAdjacentHTML("afterbegin",window.SW_ICON("bulb"));
+$("btnReset").insertAdjacentHTML("afterbegin",window.SW_ICON("rotate"));
+$("btnLv").insertAdjacentHTML("afterbegin",window.SW_ICON("grid"));
+setOvBtn("下一关","play");
 
 })();
 </script>

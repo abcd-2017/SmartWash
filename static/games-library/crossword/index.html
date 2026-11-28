@@ -6,60 +6,85 @@
 <meta name="theme-color" content="#F5F6F3">
 <title>中文填字</title>
 <style>
-  /*token:GAME-THEME.md §2 基线（全部 UI 壳走 token）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light }
-  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
+  /*token:GAME-THEME.md §2/§3（--g-cw-* 素材）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-on-primary:#FFFFFF;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-border:#E6E9E6;--g-radius-btn:14px;--g-radius-inner:12px;--g-cw-board1:#F7F3E8;--g-cw-board2:#E9E0CA;--g-cw-groove:#C6BCA1;--g-cw-cell1:#FFFDF7;--g-cw-cell2:#F1EBD9;--g-cw-cell-hi:#FFFFFF;--g-cw-ink:#3A3122;--g-cw-target1:#D8EEE0;--g-cw-target2:#B5DFC6;--g-cw-cur:#17734A;--g-cw-lock1:#F6DFA6;--g-cw-lock2:#E7C476;--g-cw-shadow:rgba(60,48,20,.20);color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-border:#2C312D;--g-cw-board1:#1C1A15;--g-cw-board2:#12100C;--g-cw-groove:#4A4433;--g-cw-cell1:#2B2922;--g-cw-cell2:#1E1C17;--g-cw-cell-hi:#3B382E;--g-cw-ink:#EDE4CE;--g-cw-target1:#24402F;--g-cw-target2:#172A1F;--g-cw-cur:#17734A;--g-cw-lock1:#4A3A1C;--g-cw-lock2:#332712;--g-cw-shadow:rgba(0,0,0,.45);color-scheme:dark }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
   html, body { margin: 0; padding: 0; }
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
-    background: var(--g-bg); color: var(--g-text);
-    min-height: 100vh; display: flex; justify-content: center;
-    padding: 16px 8px 30px;
-    -webkit-user-select: none; user-select: none;
-    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation; overscroll-behavior: none;
-  }
+  body { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif; background: var(--g-bg); color: var(--g-text); min-height: 100vh; display: flex; justify-content: center; padding: 16px 8px 30px; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; touch-action: manipulation; overscroll-behavior: none; }
   .wrap { width: 100%; max-width: 480px; }
-  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; }
-  .sub { font-size: 14px; color: var(--g-muted); }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; padding: 0 2px; }
+  .sub { font-size: 14px; color: var(--g-muted); line-height: 1.4; text-align: right; }
+  /* 页头关卡标签：品牌 soft 底 + deep 字 + 内联图标 */
+  .lvtag { display: inline-flex; align-items: center; gap: 6px; min-width: 0; padding: 4px 10px; white-space: nowrap; border-radius: 10px; background: var(--g-primary-soft); color: var(--g-primary-deep); font-size: 14px; font-weight: 600; line-height: 1.4; }
+  .lvtag .swi { width: 14px; height: 14px; flex: none; }
   .stats { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; }
+  .stat { flex: 1; min-width: 0; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; animation: rise .38s ease-out backwards; }
+  .stat:nth-child(2) { animation-delay: 40ms; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
-  .stat .val { font-size:18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
-  .grid { display: grid; gap: 2px; width: 100%; margin-bottom: 12px; }
-  .cell { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-weight: 600; border-radius: 6px; background: var(--g-surface2); color: var(--g-muted); font-size: clamp(12px, 4.2vw, 18px); }
-  .cell.w { background: var(--g-surface); color: var(--g-text); border: 1px solid var(--g-border); cursor: pointer; }
-  .cell.w.on { background: var(--g-primary-soft); border-color: transparent; }
-  .cell.w.cur { box-shadow: inset 0 0 0 2px var(--g-primary-deep); }
-  .cell.w.lock { background: var(--g-primary-soft); color: var(--g-on-soft); border-color: transparent; cursor: default; }
+  .stat .val { display: inline-block; font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val.bump { animation: bump .2s ease-out; }
+  /* 棋盘地面：纸面 + 2px 沟槽外框 + 落地投影 */
+  .board { display: grid; gap: 3px; width: 100%; margin-bottom: 10px; padding: 8px; border-radius: var(--g-radius-inner); background: linear-gradient(160deg, var(--g-cw-board1), var(--g-cw-board2)); border: 2px solid var(--g-cw-groove); box-shadow: 0 2px 8px var(--g-cw-shadow), inset 0 1px 0 var(--g-cw-cell-hi); }
+  /* 字格：可点可辨的「面」；状态规则覆写 --f1/--f2/--ring */
+  .cell { position: relative; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-weight: 600; border-radius: 10px; font-size: clamp(12px, 4.2vw, 18px); color: var(--g-cw-ink); background: var(--g-cw-board2); box-shadow: inset 0 1px 3px rgba(0,0,0,.10); transition: box-shadow .16s ease-out, color .16s ease-out, transform .14s ease-out; animation: tileIn .3s ease-out backwards; animation-delay: calc(var(--i, 0) * 40ms); }
+  .cell.w { --f1: var(--g-cw-cell1); --f2: var(--g-cw-cell2); --ring: transparent; cursor: pointer; background: linear-gradient(180deg, var(--g-cw-cell-hi), var(--f1) 38%, var(--f2)); box-shadow: inset 0 1px 0 var(--g-cw-cell-hi), inset 0 0 0 1px var(--ring), 0 2px 4px var(--g-cw-shadow); }
+  .cell.w.on { --f1: var(--g-cw-target1); --f2: var(--g-cw-target2); --ring: var(--g-primary-deep); }
+  .cell.w.lock { --f1: var(--g-cw-lock1); --f2: var(--g-cw-lock2); --ring: var(--g-cw-groove); cursor: default; }
+  .cell.w.cur { --f1: var(--g-cw-cur); --f2: var(--g-cw-cur); --ring: var(--g-on-primary); color: var(--g-on-primary); box-shadow: inset 0 0 0 2px var(--g-on-primary), 0 0 0 2px var(--g-cw-cur), 0 2px 6px var(--g-cw-shadow); }
+  .cell.w[data-pop] { animation: cellPop .22s ease-out; }
+
+  .legend { margin: 0 0 10px; font-size: 12px; color: var(--g-muted); line-height: 1.5; text-align: center; animation: rise .38s ease-out backwards; animation-delay: 120ms; }
+  .legend .dot { display: inline-block; width: 10px; height: 10px; margin: 0 4px 0 10px; border-radius: 10px; vertical-align: -1px; box-shadow: inset 0 1px 0 var(--g-cw-cell-hi); }
+  .legend .dot.a { background: var(--g-cw-cell1); border: 1px solid var(--g-cw-groove); }
+  .legend .dot.b { background: var(--g-cw-target2); border: 1px solid var(--g-primary-deep); }
+  .legend .dot.c { background: var(--g-cw-cur); }
+  .legend .dot.d { background: var(--g-cw-lock2); border: 1px solid var(--g-cw-groove); }
   .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
   .sec { font-size: 12px; color: var(--g-muted); margin: 12px 2px 6px; }
   .pool { display: flex; flex-wrap: wrap; gap: 8px; }
-  .pool button { min-height: 44px; min-width: 44px; padding: 2px 10px; border: 0; border-radius: 10px; background: var(--g-surface); color: var(--g-text); font: inherit; cursor: pointer; box-shadow: 0 1px 0 var(--g-border); display: flex; flex-direction: column; align-items: center; line-height: 1.2; }
+  .pool button { min-height: 44px; min-width: 44px; padding: 2px 10px; border: 0; border-radius: 10px; background: linear-gradient(180deg, var(--g-cw-cell-hi), var(--g-cw-cell1) 40%, var(--g-cw-cell2)); color: var(--g-cw-ink); font: inherit; cursor: pointer; box-shadow: inset 0 1px 0 var(--g-cw-cell-hi), 0 1px 3px var(--g-cw-shadow); display: flex; flex-direction: column; align-items: center; line-height: 1.2; transition: transform .14s ease-out, opacity .16s ease-out, box-shadow .16s ease-out; }
   .pool button b { font-size: 18px; font-weight: 600; }
   .pool button i { font-style: normal; font-size: 12px; color: var(--g-muted); }
   .pool button:disabled { opacity: .35; box-shadow: none; }
   .hints { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
-  .hints button { min-height: 44px; border: 0; border-radius: var(--g-radius-inner); background: var(--g-surface); color: var(--g-muted); font-family: inherit; font-size: 14px; text-align: left; padding: 8px 12px; cursor: pointer; }
-  .hints button b { font-weight: 600; margin-right: 8px; color: var(--g-primary-deep); white-space: nowrap; }
+  .hints button { min-height: 44px; border: 0; border-radius: var(--g-radius-inner); background: var(--g-surface); color: var(--g-muted); font-family: inherit; font-size: 14px; text-align: left; padding: 8px 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: inset 0 1px 0 var(--g-cw-cell-hi), 0 1px 2px var(--g-cw-shadow); transition: transform .14s ease-out, background .16s ease-out, color .16s ease-out; }
+  .hints button .swi { width: 18px; height: 18px; flex: none; color: var(--g-primary-deep); }
+  .hints button b { font-weight: 600; color: var(--g-primary-deep); white-space: nowrap; }
+  .hints button .tx { flex: 1; min-width: 0; }
   .hints button.on { background: var(--g-primary-soft); color: var(--g-on-soft); }
-  .hints button.on b { color: var(--g-on-soft); }
-  .hints button.ok { color: var(--g-muted); }
+  .hints button.on b, .hints button.on .swi { color: var(--g-on-soft); }
   .hints button.ok b { color: var(--g-muted); text-decoration: line-through; }
+  .hints button.ok .swi { color: var(--g-muted); }
   .tools { display: flex; gap: 8px; }
-  .btn { min-height: 44px; padding: 0 14px; flex: 1; border: 0; border-radius: var(--g-radius-btn); background: var(--g-btn-primary); color: #fff; font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer; }
-  .btn:active { opacity: .85; }
-  .btn.ghost { background: var(--g-surface2); color: var(--g-text); }
+  .btn { min-height: 44px; padding: 0 14px; flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 0; border-radius: var(--g-radius-btn); background: var(--g-btn-primary); color: var(--g-on-primary); font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer; box-shadow: 0 1px 3px var(--g-cw-shadow); transition: transform .14s ease-out, opacity .16s ease-out, background .16s ease-out; }
+  .btn .swi { width: 18px; height: 18px; flex: none; }
+  .cell.w:active, .pool button:active, .hints button:active, .btn:active { transform: scale(.96); }
+  .btn.ghost { background: var(--g-surface2); color: var(--g-text); box-shadow: 0 0 0 1px var(--g-border); }
   .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
-
-  /* S2: 动效敏感用户降级——保留状态切换，压平装饰动效（animate.md 要求；注意：这是动效层指令，不受 GAME-THEME §4 主题层 matchMedia 禁令约束） */
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
-
-  /* P2: 键盘焦点可见（S5） */
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes bump { 0% { transform: scale(1); } 40% { transform: scale(1.22); } 100% { transform: scale(1); } }
+  @keyframes tileIn { from { opacity: 0; transform: translateY(6px) scale(.92); } to { opacity: 1; transform: none; } }
+  @keyframes cellPop { 0% { transform: scale(.86); } 60% { transform: scale(1.12); } 100% { transform: scale(1); } }
+  /* S2: 动效降级（动效层指令，不受 §4 主题层 matchMedia 禁令约束） */
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; animation-delay:0ms !important; transition-duration:.01ms !important} }
+  /* P2: 键盘焦点可见 */
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 </style>
+<script>
+/* 内联图标库：照抄本库 window.SW_ICON 结构（24 viewBox / currentColor / aria-hidden / 零外链） */
+window.SW_ICON=function(n,s){s=s||"";var P={
+ 'tile':'<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>',
+ 'hint':'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.8.8 1 1.6 1 2.5h6c0-.9.2-1.7 1-2.5A6 6 0 0 0 12 3z"/>',
+ 'rotate':'<path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/>',
+ 'play':'<path d="M8 5v14l11-7z"/>',
+ 'check':'<path d="M4 12.5l5 5L20 6.5"/>'
+};
+var fill={ 'play':1,'check':1 };
+return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
+};
+</script>
 <script>
 //主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
 (function(){
@@ -75,22 +100,23 @@ window.__gRM=(function(){try{return matchMedia("(prefers-reduced-motion: reduce)
 </head>
 <body>
 <div class="wrap">
-  <header><span class="sub">点格子选词 · 点字块填入 · 点已填格撤回</span></header>
+  <header><span class="lvtag"><span class="swi" id="lvTagIco" aria-hidden="true"></span><span id="lvTagText">第 1 关 · 动物</span></span><span class="sub">点格子选词 · 点字块填入</span></header>
   <div class="stats">
     <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/4</span></div>
-    <div class="stat"><span class="label">已填</span><span class="val" id="stDone">0/8</span></div>
+    <div class="stat"><span class="label">已填好</span><span class="val" id="stDone">0/8</span></div>
   </div>
-  <div class="grid" id="grid"></div>
+  <div class="board" id="grid"></div>
+  <p class="legend"><span class="dot a"></span>字格可点 · <span class="dot b"></span>绿底正在填 · <span class="dot c"></span>深绿当前格 · <span class="dot d"></span>金底已填好</p>
   <p class="msg" id="msg" role="status" aria-live="polite">点格子选中词语，再点下方字块填入</p>
   <p class="sec">字块（角标为剩余次数）</p>
   <div class="pool" id="pool"></div>
   <p class="sec">词条提示（点击可选中）</p>
   <div class="hints" id="hints"></div>
   <div class="tools">
-    <button class="btn ghost" id="btnClear">重玩本关</button>
-    <button class="btn" id="btnNext" hidden>下一关</button>
+    <button class="btn ghost" id="btnClear" type="button">重玩本关</button>
+    <button class="btn" id="btnNext" type="button" hidden>下一关</button>
   </div>
-  <p class="foot">灰色空格为填充装饰 · 填对的词会自动锁定 · 进度自动保存</p>
+  <p class="foot">凹下去的空格是装饰 · 绿底=正在填的词 · 金底=已填好的词 · 点已填格可撤回 · 进度自动保存</p>
 </div>
 <script>
 (function(){
@@ -210,6 +236,7 @@ var doneSave = saveData.done || {};
 var gridEl = document.getElementById("grid"), poolEl = document.getElementById("pool"), hintsEl = document.getElementById("hints"), msgEl = document.getElementById("msg");
 function $(id){ return document.getElementById(id); }
 function say(t){ msgEl.textContent = t; }
+function bump(el){ if(!el||window.__gRM)return; el.classList.remove("bump"); void el.offsetWidth; el.classList.add("bump"); }
 /* ---------- 关卡构建 ---------- */
 function startLevel(n){
   cur = n;
@@ -239,20 +266,21 @@ function startLevel(n){
   gridEl.innerHTML = "";
   gridEl.style.gridTemplateColumns = "repeat(" + cols + ",1fr)";
   for (var r = 0; r < rows; r++) for (var c = 0; c < cols; c++) {
-    var k = r + "," + c;
-    if (cellInfo[k]) gridEl.appendChild(mkCell(k));
-    else {
-      var d = document.createElement("div");
-      d.className = "cell";
-      gridEl.appendChild(d);
-    }
+    var k = r + "," + c, d;
+    if (cellInfo[k]) d = mkCell(k);
+    else d = document.createElement("div");
+    if (!cellInfo[k]) d.className = "cell";
+    d.style.setProperty("--i", r);
+    gridEl.appendChild(d);
   }
   $("stLv").textContent = (n + 1) + "/" + LEVELS.length;
+  $("lvTagText").textContent = "第 " + (n + 1) + " 关 · " + L.name;
   hintsEl.innerHTML = "";
   words.forEach(function(w, wi){
     var b = document.createElement("button");
     b.className = "hint";
-    b.innerHTML = "<b>" + (wi + 1) + (w[2] === "h" ? "横" : "竖") + "·" + w[0].length + "字</b>" + w[1];
+    b.innerHTML = '<span class="swi" aria-hidden="true"></span><b>' + (wi + 1) + (w[2] === "h" ? "横" : "竖") + "·" + w[0].length + "字</b><span class=\"tx\">" + w[1] + "</span>";
+    b.querySelector(".swi").innerHTML = window.SW_ICON("hint");
     b.addEventListener("click", function(){ pickWord(wi); });
     hintsEl.appendChild(b);
   });
@@ -266,7 +294,6 @@ function startLevel(n){
   save();
   say("第" + (n + 1) + "关 · " + L.name + " · 已完成 " + locked.size + "/" + words.length + " 词");
 }
-var cellEls = {};
 function mkCell(key){
   var d = document.createElement("div");
   d.className = "cell w";
@@ -284,10 +311,12 @@ function render(){
     var isOn = sel >= 0 && cellInfo[k].some(function(e){ return e.w === sel; });
     var isCur = sel >= 0 && cursor >= 0 && cellInfo[k].some(function(e){ return e.w === sel && e.i === cursor; });
     var cls = "cell w" + (isLock ? " lock" : isOn ? " on" : "") + (isCur && !isLock ? " cur" : "");
-    d.className = cls;
+    if (d.className !== cls) d.className = cls;
     d.textContent = user[k] || "";
   });
-  $("stDone").textContent = locked.size + "/" + words.length;
+  var done = locked.size + "/" + words.length;
+  var el = $("stDone");
+  if (el.textContent !== done) { el.textContent = done; bump(el); }
   $("btnNext").hidden = locked.size !== words.length;
 }
 function renderPool(){
@@ -365,7 +394,7 @@ function checkWord(w){
     renderHints(); render(); save();
     if (locked.size === words.length) {
       say(cur < LEVELS.length - 1 ? "本关完成！点「下一关」继续" : "全部关卡完成，太棒了！");
-      $("btnNext").textContent = cur < LEVELS.length - 1 ? "下一关" : "再玩一遍";
+      $("btnNext").innerHTML = window.SW_ICON("play") + (cur < LEVELS.length - 1 ? "下一关" : "再玩一遍");
       // 成绩上报（到达关卡，desc：越大越好）
       if (GB.available) GB.reportScore("crossword", { metricValue: cur + 1 }).catch(function(){});
     } else {
@@ -386,6 +415,16 @@ function lockWord(w, silent){
   if (sel === w) sel = -1;
   if (!silent) renderPool();
   renderHints(); render();
+  popWord(w);
+}
+/* 锁定瞬间：该词逐格轻弹，给出「这词填对了」的反馈（reduced-motion 时跳过） */
+function popWord(w){
+  if (window.__gRM) return;
+  var word = words[w];
+  for (var i = 0; i < word[0].length; i++) {
+    var d = cellEls[keyAt(w, i)];
+    if (d) d.setAttribute("data-pop", "1");
+  }
 }
 /* ---------- 按钮 ---------- */
 $("btnClear").addEventListener("click", function(){
@@ -398,6 +437,9 @@ $("btnNext").addEventListener("click", function(){
   startLevel(cur < LEVELS.length - 1 ? cur + 1 : 0);
 });
 /* ---------- 启动 ---------- */
+$("lvTagIco").innerHTML = window.SW_ICON("tile");
+$("btnClear").insertAdjacentHTML("afterbegin", window.SW_ICON("rotate"));
+$("btnNext").insertAdjacentHTML("afterbegin", window.SW_ICON("play"));
 startLevel(saveData.lv < LEVELS.length ? saveData.lv : 0);
 syncLevelsFromServer();syncSaveFromServer();
 })();

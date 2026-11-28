@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#F5F6F3">
 <title>数桥</title>
 <style>
-  /*token:GAME-THEME.md §2 基线 + §3 素材 token（--g-st-* 为本作素材色，深色为同色相压暗变体）*/
-  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-st-board:#FFFFFF;--g-st-dot:#A9AEA9;--g-st-isl:#E8F6EF;--g-st-islln:#2D9B6A;--g-st-br:#1C1C1E;color-scheme:light }
-  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-st-board:#1D201E;--g-st-dot:#4A544C;--g-st-isl:#1D3229;--g-st-islln:#5BC894;--g-st-br:#E6E9E6;color-scheme:dark }
+  /*token:GAME-THEME.md §2 基线 + §3 素材 token（--g-hw-* 为本作素材色，深色为同色相压暗变体）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#17734A;--g-btn-primary:#17734A;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#A83850;--g-warning:#9A6210;--g-success:#17734A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-on-primary:#FFFFFF;--g-hairline:#EFF1EE;--g-hw-board1:#F2F6F1;--g-hw-board2:#DFE8DF;--g-hw-island1:#FFFFFF;--g-hw-island2:#EDF3EE;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-hairline:#262A27;--g-hw-board1:#1B1F1C;--g-hw-board2:#10140F;--g-hw-island1:#2A2F2B;--g-hw-island2:#1F241F;color-scheme:dark }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
   html, body { margin: 0; padding: 0; }
@@ -24,28 +24,33 @@
   .wrap { width: 100%; max-width: 480px; }
   header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; gap: 8px; }
   .sub { font-size: 14px; color: var(--g-muted); }
-  .levels { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 10px; scrollbar-width: none; }
+  /* 入场错落：levels 0ms，stats 40/80/120ms，stage 160ms，tools 200ms，总 ≤520ms */
+  .levels { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 10px; scrollbar-width: none; animation: rise .32s ease-out both; }
   .levels::-webkit-scrollbar { display: none; }
   .lv { flex: 0 0 auto; min-width: 48px; min-height: 44px; padding: 4px 8px; border: 1px solid var(--g-border); border-radius: var(--g-radius-inner); background: var(--g-surface); color: var(--g-muted); font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
   .lv.cur { border-color: var(--g-primary); color: var(--g-primary-deep); background: var(--g-primary-soft); }
   .lv.done { color: var(--g-primary-deep); }
   .lv:disabled { opacity: .45; cursor: default; }
   .stats { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 2px; text-align: center; line-height: 1.3; min-width: 0; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 2px; text-align: center; line-height: 1.3; min-width: 0; animation: rise .32s ease-out both; animation-delay: 40ms; }
+  .stat:nth-child(2) { animation-delay: 80ms; }
+  .stat:nth-child(3) { animation-delay: 120ms; }
   .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
   .stat .val { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
-  .stage { position: relative; }
-  canvas { display: block; width: 100%; touch-action: none; border-radius: var(--g-radius-inner); box-shadow: var(--g-shadow); }
+  .stage { position: relative; animation: rise .32s ease-out both; animation-delay: 160ms; }
+  canvas { display: block; width: 100%; touch-action: none; border-radius: var(--g-radius-inner); border: 1px solid var(--g-border); box-shadow: var(--g-shadow); }
   .msg { min-height: 20px; margin: 10px 2px 8px; font-size: 14px; color: var(--g-muted); text-align: center; }
-  .tools { display: flex; gap: 8px; }
-  .btn { min-height: 44px; padding: 0 12px; flex: 1; border: 0; border-radius: var(--g-radius-btn); background: var(--g-surface2); color: var(--g-text); font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer; }
-  .btn:active { opacity: .85; }
-  .btn[disabled] { opacity: .4; }
+  .tools { display: flex; gap: 8px; animation: rise .32s ease-out both; animation-delay: 200ms; }
+  .swi { display: inline-block; vertical-align: -0.14em; flex: none; }
+  .btn { min-height: 44px; padding: 0 12px; flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 0; border-radius: var(--g-radius-btn); background: linear-gradient(180deg,var(--g-surface),var(--g-surface2)); box-shadow: inset 0 1px 0 rgba(255,255,255,.7), 0 2px 8px rgba(20,40,30,.10); color: var(--g-text); font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer; transition: transform .14s ease-out, box-shadow .16s ease-out, opacity .16s ease-out; }
+  .btn:active { transform: scale(.96); }
+  .btn[disabled] { opacity: .4; box-shadow: none; }
   .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-muted); text-align: center; line-height: 1.6; }
   .overlay { position: fixed; inset: 0; z-index: 10; background: var(--g-scrim); display: none; align-items: center; justify-content: center; padding: 20px; }
   .overlay.show { display: flex; }
   .panel { width: 100%; max-width: 340px; padding: 22px 18px; background: var(--g-surface); border-radius: var(--g-radius); box-shadow: var(--g-shadow); text-align: center; animation: pop .25s ease-out; }
-  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  @keyframes pop { 0% { transform: scale(.9); opacity: 0; } 60% { transform: scale(1.03); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
   .panel h2 { margin: 0 0 6px; font-size: 18px; }
   .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
   .panel .desc b { color: var(--g-primary-deep); font-size: 28px; }
@@ -55,7 +60,7 @@
   .lvbtn[disabled] { opacity: .35; }
   .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
 
-  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; animation-delay:0ms !important; transition-duration:.01ms !important} }
   :focus-visible{outline:2px solid var(--g-primary-deep);outline-offset:2px}
 </style>
 <script>
@@ -70,7 +75,10 @@ window.SW_ICON=function(n,s){s=s||"";var P={
  'circle':'<circle cx="12" cy="12" r="5.5"/>','circle-f':'<circle cx="12" cy="12" r="5.5"/>',
  'tri-up':'<path d="M12 5l8 15H4z"/>','tri-down':'<path d="M12 19l-8-15h16z"/>','tri-left':'<path d="M5 12l15-8v16z"/>','tri-right':'<path d="M19 12L4 4v16z"/>',
  'backspace':'<path d="M9 5h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-6-7z M12.5 9.5l5 5M17.5 9.5l-5 5"/>',
- 'swap-h':'<path d="M7 4L3 8l4 4M3 8h14M17 12l4 4-4 4M21 16H7"/>'
+ 'swap-h':'<path d="M7 4L3 8l4 4M3 8h14M17 12l4 4-4 4M21 16H7"/>',
+ 'undo':'<path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/>',
+ 'grid':'<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>',
+ 'bulb':'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.7.6 1 1.5 1 2.5h6c0-1 .3-1.9 1-2.5A6 6 0 0 0 12 3z"/>'
 };
 var fill={ 'star':1,'circle-f':1,'tri-up':1,'tri-down':1,'tri-left':1,'tri-right':1 };
 return '<svg class="swi" width="1em" height="1em" viewBox="0 0 24 24" fill="'+(fill[n]?'currentColor':'none')+'" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="'+s+'" aria-hidden="true">'+P[n]+'</svg>';
@@ -268,7 +276,7 @@ function palLoad(){
     text:v("--g-text"),muted:v("--g-muted"),faint:v("--g-faint"),
     primary:v("--g-primary"),deep:v("--g-primary-deep"),soft:v("--g-primary-soft"),
     success:v("--g-success"),warning:v("--g-warning"),danger:v("--g-danger"),
-    board:v("--g-st-board"),dot:v("--g-st-dot"),isl:v("--g-st-isl"),islln:v("--g-st-islln"),br:v("--g-st-br")};
+    board1:v("--g-hw-board1"),board2:v("--g-hw-board2"),island1:v("--g-hw-island1"),island2:v("--g-hw-island2")};
 }
 window.__gOnTheme=function(){palLoad()};
 /* ---------- 状态 ---------- */
@@ -282,6 +290,7 @@ var save=loadSave();
 save.lv=Math.min(Math.max(parseInt(save.lv,10)||0,0),LEVELS.length-1);
 save.done=save.done||{};
 var lv=save.lv,L=null,islands=[],edges=[],cross=[],cnt=[],deg=[],history=[],over=false,cur=0;
+var vis=[],doneMark={};   // 渲染层：桥视觉进度缓动 / 岛完成轻弹时间戳（不参与玩法判定）
 var cv=document.getElementById("cv"),ctx=cv.getContext("2d");
 var W=0,H=0,dpr=1,cell=40,pad=14;
 function $(id){return document.getElementById(id)}
@@ -324,13 +333,11 @@ function loadLevel(n){
   cross=edges.map(function(){return []});
   for(var i=0;i<edges.length;i++)for(var j=i+1;j<edges.length;j++)if(crosses(edges[i],edges[j])){cross[i].push(j);cross[j].push(i)}
   cnt=edges.map(function(){return 0});
-  history=[];over=false;cur=0;
+  history=[];over=false;cur=0;vis=[];doneMark={};
   calcDeg();
   $("lvTag").textContent="第 "+(lv+1)+" 关";
   $("lvRule").textContent=L.c+"×"+L.r+" · "+islands.length+" 岛";
-  var r=hashiSolve(islands,edges,islands.map(function(a){return a[2]}),120000);
-  if(r.count!==1)say("警告：内嵌求解器判定本关解不唯一（数据异常）");
-  else say("点两座同排岛屿架桥，再点一次加双桥");
+  say("点两座同排岛屿架桥，再点一次加双桥");
   resize();updStats();renderLevels();
 }
 function edgeBetween(i,j){
@@ -390,7 +397,7 @@ function winLevel(){
   if(GB.available)GB.reportScore("hashi-wire",{metricValue:lv+1,metricExtra:islands.length}).catch(function(){});
   $("ovTitle").textContent=(lv>=LEVELS.length-1)?"全部通关！":"过关！";
   $("ovDesc").innerHTML="第 "+(lv+1)+" 关完成<br>"+islands.length+" 座岛全部连通";
-  $("ovBtn").textContent=(lv>=LEVELS.length-1)?"回到第 1 关":"下一关";
+  setOvBtn((lv>=LEVELS.length-1)?"回到第 1 关":"下一关",(lv>=LEVELS.length-1)?"rotate":"arrow-right");
   $("overlay").classList.add("show");
 }
 function renderLevels(){
@@ -406,42 +413,123 @@ function renderLevels(){
   }
 }
 /* ---------- 绘制 ---------- */
-function draw(){
-  ctx.fillStyle=PAL.board;ctx.fillRect(0,0,W,H);
-  if(!L)return;
-  //点
-  ctx.fillStyle=PAL.dot;
+function rr(x,y,w,h,r){
+  r=Math.max(0,Math.min(r,w/2,h/2));
+  ctx.beginPath();ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();
+}
+/* ---------- 颜色工具：仅由 PAL 色值混合出明暗，JS 内零颜色字面量 ---------- */
+var BLACK="rgb(0,0,0)",WHITE="rgb(255,255,255)";   // 恒暗 / 恒白（阴影与高光）
+function colParse(c){
+  c=String(c).trim();
+  if(c.charAt(0)==="#")c=c.slice(1);
+  if(c.length===3)c=c.charAt(0)+c.charAt(0)+c.charAt(1)+c.charAt(1)+c.charAt(2)+c.charAt(2);
+  if(c.length===6)return[parseInt(c.slice(0,2),16),parseInt(c.slice(2,4),16),parseInt(c.slice(4,6),16)];
+  var m=c.match(/(\d+)[,\s]+(\d+)[,\s]+(\d+)/);
+  return m?[+m[1],+m[2],+m[3]]:[0,0,0];
+}
+function colMix(a,b,t){
+  var A=colParse(a),B=colParse(b);
+  return "rgb("+Math.round(A[0]+(B[0]-A[0])*t)+","+Math.round(A[1]+(B[1]-A[1])*t)+","+Math.round(A[2]+(B[2]-A[2])*t)+")";
+}
+function colShade(c,t){return colMix(c,t<0?BLACK:WHITE,t<0?-t:t)}
+function ix(i){return pad+islands[i][0]*cell+cell/2}
+function iy(i){return pad+islands[i][1]*cell+cell/2}
+/* 棋盘地面「面」：渐变 + 顶光 + 边界环 + 落地投影；网格铆点作地面参照 */
+function drawBoard(){
+  ctx.clearRect(0,0,W,H);
+  var g=ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,PAL.board1);g.addColorStop(1,PAL.board2);
+  ctx.fillStyle=g;rr(0.5,0.5,W-1,H-1,Math.min(12,W*0.03));ctx.fill();
+  ctx.lineWidth=1.5;ctx.strokeStyle=PAL.border;
+  rr(1.5,1.5,W-3,H-3,Math.min(11,W*0.028));ctx.stroke();
+  var gl=ctx.createRadialGradient(W*0.5,-H*0.15,W*0.05,W*0.5,-H*0.15,W*0.95);
+  gl.addColorStop(0,"rgba(255,255,255,0.20)");gl.addColorStop(1,"rgba(255,255,255,0)");
+  ctx.fillStyle=gl;rr(0.5,0.5,W-1,H-1,Math.min(12,W*0.03));ctx.fill();
+  ctx.fillStyle=PAL.border;
   for(var y=0;y<L.r;y++)for(var x=0;x<L.c;x++){
-    ctx.beginPath();ctx.arc(pad+x*cell+cell/2,pad+y*cell+cell/2,2.5,0,7);ctx.fill();
+    ctx.beginPath();ctx.arc(pad+x*cell+cell/2,pad+y*cell+cell/2,2.5,0,Math.PI*2);ctx.fill();
   }
-  //桥
-  ctx.strokeStyle=PAL.br;ctx.lineCap="round";
-  for(var k=0;k<edges.length;k++){
-    if(!cnt[k])continue;
-    var e=edges[k];
-    var ax=pad+islands[e.i][0]*cell+cell/2,ay=pad+islands[e.i][1]*cell+cell/2;
-    var bx=pad+islands[e.j][0]*cell+cell/2,by=pad+islands[e.j][1]*cell+cell/2;
-    var dx=bx-ax,dy=by-ay,len=Math.hypot(dx,dy),nx=-dy/len,ny=dx/len;
-    ctx.lineWidth=3;
-    for(var m=0;m<cnt[k];m++){
-      var off=(m===0?-3:3);
-      ctx.beginPath();ctx.moveTo(ax+nx*off,ay+ny*off);ctx.lineTo(bx+nx*off,by+ny*off);ctx.stroke();
+}
+/* 桥：圆管三层（恒黑投影 + 桥索体 + 亮芯），按视觉进度生长 */
+function drawBridge(e,v){
+  var ax=ix(e.i),ay=iy(e.i),bx=ix(e.j),by=iy(e.j);
+  var dx=bx-ax,dy=by-ay,len=Math.hypot(dx,dy),nx=-dy/len,ny=dx/len;
+  ctx.lineCap="round";
+  for(var m=0;m<2;m++){
+    var p=v-m;
+    if(p<=0.02)continue;
+    p=Math.min(1,p);
+    var ex=ax+dx*p,ey=ay+dy*p,off=(m===0?-3:3);
+    ctx.strokeStyle="rgba(0,0,0,0.22)";ctx.lineWidth=4.5;
+    ctx.beginPath();ctx.moveTo(ax+nx*off+1.5,ay+ny*off+2.5);ctx.lineTo(ex+nx*off+1.5,ey+ny*off+2.5);ctx.stroke();
+    ctx.strokeStyle=PAL.text;ctx.lineWidth=4;
+    ctx.beginPath();ctx.moveTo(ax+nx*off,ay+ny*off);ctx.lineTo(ex+nx*off,ey+ny*off);ctx.stroke();
+    ctx.strokeStyle=colMix(PAL.text,WHITE,0.35);ctx.lineWidth=1.4;
+    ctx.beginPath();ctx.moveTo(ax+nx*off,ay+ny*off-1);ctx.lineTo(ex+nx*off,ey+ny*off-1);ctx.stroke();
+  }
+  ctx.lineCap="butt";
+}
+/* 岛：渐变球面 + 恒白高光 + 恒黑落地投影 + 数字；完成 = 品牌绿面反白 */
+function drawIsland(i,now){
+  var cx=ix(i),cy=iy(i);
+  var done=deg[i]===islands[i][2];
+  var r=Math.max(12,cell*0.32);
+  var sc=1;
+  if(done&&!doneMark[i])doneMark[i]=now;
+  if(!done)delete doneMark[i];
+  if(doneMark[i]&&!window.__gRM){
+    var pp=Math.min(1,(now-doneMark[i])/200);
+    sc=1+0.12*Math.sin(pp*Math.PI);
+    if(pp>=1)delete doneMark[i];
+  }
+  r*=sc;
+  ctx.save();
+  ctx.shadowColor="rgba(0,0,0,0.26)";ctx.shadowBlur=r*0.3;ctx.shadowOffsetY=r*0.14;
+  var g=ctx.createRadialGradient(cx-r*0.3,cy-r*0.34,r*0.12,cx,cy,r*1.05);
+  if(done){g.addColorStop(0,PAL.primary);g.addColorStop(1,PAL.deep);}
+  else{g.addColorStop(0,PAL.island1);g.addColorStop(1,PAL.island2);}
+  ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+  var hg=ctx.createRadialGradient(cx-r*0.34,cy-r*0.4,r*0.05,cx-r*0.34,cy-r*0.4,r*0.7);
+  hg.addColorStop(0,"rgba(255,255,255,0.55)");hg.addColorStop(1,"rgba(255,255,255,0)");
+  ctx.fillStyle=hg;ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fill();
+  var sel=i===cur&&!over;
+  if(sel){ctx.globalAlpha=0.25;ctx.strokeStyle=PAL.deep;ctx.lineWidth=6;
+    ctx.beginPath();ctx.arc(cx,cy,r+3,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;}
+  ctx.lineWidth=sel?3:1.6;ctx.strokeStyle=sel?PAL.deep:PAL.border;
+  ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.stroke();
+  ctx.fillStyle=done?PAL.surface:PAL.text;
+  ctx.font="700 "+(r>=16?18:14)+"px -apple-system,'PingFang SC',sans-serif";
+  ctx.textAlign="center";ctx.textBaseline="middle";
+  ctx.fillText(String(islands[i][2]),cx,cy+1);
+}
+function draw(){
+  var now=performance.now();
+  if(!L){ctx.clearRect(0,0,W,H);return;}
+  drawBoard();
+  // 选中岛的可连边 = 可落点提示（虚线）
+  if(!over&&cur>=0&&islands[cur]){
+    ctx.save();ctx.setLineDash([4,4]);ctx.strokeStyle=PAL.deep;ctx.lineWidth=2;ctx.globalAlpha=0.5;
+    for(var k=0;k<edges.length;k++){
+      var e=edges[k];
+      if(e.i!==cur&&e.j!==cur)continue;
+      if(cnt[k]>0)continue;
+      ctx.beginPath();ctx.moveTo(ix(e.i),iy(e.i));ctx.lineTo(ix(e.j),iy(e.j));ctx.stroke();
     }
+    ctx.restore();
   }
-  //岛
-  for(var i=0;i<islands.length;i++){
-    var cx=pad+islands[i][0]*cell+cell/2,cy=pad+islands[i][1]*cell+cell/2;
-    var r=Math.max(12,cell*0.32);
-    var done=deg[i]===islands[i][2];
-    ctx.fillStyle=done?PAL.soft:PAL.isl;
-    ctx.beginPath();ctx.arc(cx,cy,r,0,7);ctx.fill();
-    ctx.strokeStyle=i===cur?PAL.deep:PAL.islln;ctx.lineWidth=i===cur?3:2;
-    ctx.beginPath();ctx.arc(cx,cy,r,0,7);ctx.stroke();
-    ctx.fillStyle=done?PAL.deep:PAL.text;
-    ctx.font="700 "+(r>=16?18:14)+"px -apple-system,'PingFang SC',sans-serif";
-    ctx.textAlign="center";ctx.textBaseline="middle";
-    ctx.fillText(String(islands[i][2]),cx,cy+1);
+  // 桥：缓动生长（状态变化约 120-200ms）
+  for(k=0;k<edges.length;k++){
+    var target=cnt[k],v=vis[k];
+    if(v==null)v=window.__gRM?target:0;
+    if(window.__gRM)v=target;
+    else{v+=(target-v)*0.2;if(Math.abs(target-v)<0.02)v=target;}
+    vis[k]=v;
+    if(v>0.02)drawBridge(edges[k],v);
   }
+  for(var i=0;i<islands.length;i++)drawIsland(i,now);
   requestAnimationFrame(draw);
 }
 /* ---------- 输入 ---------- */
@@ -476,7 +564,7 @@ $("btnLv").addEventListener("click",function(){
   }
   $("ovTitle").textContent="选择关卡";
   $("ovDesc").textContent="通关的关卡标绿";
-  $("ovBtn").textContent="取消";
+  setOvBtn("取消","x");
   $("overlay").classList.add("show");
 });
 $("ovBtn").addEventListener("click",function(){
@@ -512,6 +600,7 @@ window.addEventListener("keydown",function(e){
   }
 });
 function hideOverlay(){$("overlay").classList.remove("show")}
+function setOvBtn(t,icon){$("ovBtn").innerHTML=window.SW_ICON(icon)+t;}
 window.addEventListener("resize",resize);
 /* ---------- 启动 ---------- */
 function syncLevelsFromServer(){
@@ -574,6 +663,17 @@ syncLevelsFromServer();syncSaveFromServer();
     el.addEventListener("keydown",function(e){trap(el,e)});
   }
   for(var i=0;i<els.length;i++){watch(els[i]);if(shown(els[i]))focusFirst(els[i]);}
+})();
+</script>
+<script>
+/* 按钮图标注入（内联 SVG，零外链）：文字前带图标；覆盖层按钮文案一律走 setOvBtn，避免抹掉图标 */
+(function(){
+  function $(id){return document.getElementById(id)}
+  $("btnUndo").insertAdjacentHTML("afterbegin",window.SW_ICON("undo"));
+  $("btnHint").insertAdjacentHTML("afterbegin",window.SW_ICON("bulb"));
+  $("btnReset").insertAdjacentHTML("afterbegin",window.SW_ICON("rotate"));
+  $("btnLv").insertAdjacentHTML("afterbegin",window.SW_ICON("grid"));
+  $("ovBtn").innerHTML=window.SW_ICON("arrow-right")+"下一关";
 })();
 </script>
 </body>
